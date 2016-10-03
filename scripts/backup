@@ -1,0 +1,3 @@
+#!/bin/bash
+# Since there is no data being used by feedback portal,
+# the script does nothing.
