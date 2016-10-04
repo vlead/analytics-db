@@ -84,9 +84,10 @@
                   "sudo service kibana start",
 		  "echo 'deb http://packages.elastic.co/logstash/2.2/debian stable main' | sudo tee /etc/apt/sources.list.d/logstash-2.2.x.list",
 		  "sudo apt-get update",
-                  "sudo apt-get install logstash",
+                  "sudo apt-get -y install logstash",
                   "sudo update-rc.d logstash defaults 96 9",
-	          "sudo apt-get install nginx apache2-utils",
+	          "sudo apt-get -y install nginx",
+	          "sudo apt-get -y install apache2-utils",
                   "sudo service nginx restart",
 		  "sudo pip install Flask",
 		  "sudo pip install -U flask-cors",
@@ -99,7 +100,7 @@
  		  "sudo apt-get update",
                   "pip install elasticsearch",
                   "sudo apt-get update",
-                  "sudo apt-get install supervisor",
+                  "sudo apt-get -y install supervisor",
                   "sudo service supervisor start"
                 ],
                 "lab_actions": {
