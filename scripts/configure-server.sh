@@ -12,8 +12,8 @@ echo "port:9200" >> /etc/elasticsearch/elasticsearch.yml
 #Restart elasticsearch services
 echo `sudo service elasticsearch restart`
 
-#Restart nginx configuration to /etc/nginx/sites-enabled/default
-sudo cp elasticsearch-nginx.conf /etc/nginx/sites-enabled/default
-
+#Save nginx configuration to /etc/nginx/sites-enabled/default and restart nginx
+echo `sudo cp elasticsearch-nginx.conf /etc/nginx/sites-enabled/default`
+echo `sudo service nginx restart`
 
 
