@@ -115,3 +115,90 @@
      sudo service redis-server start
      sudo apt-get update
      #+END_SRC
+
+* Server configuration
+** Elasticsearch configuration
+   Elasticsearch must be configured such that it must be available to
+   the services willing to write data into it. To make this happen, we
+   need to configure elasticsearch to listen on specific port and
+   host.
+   + Open file /etc/elasticsearch/elasticsearch.yml
+     #+BEGIN_SRC command
+     vim /etc/elasticsearch/elasticsearch.yml
+     #+END_SRC
+   + Add the following lines at the end of the file 
+     #+BEGIN_SRC command
+     network.host: 0.0.0.0
+     http.port: 9200
+     #+END_SRC
+   + Save file and restart elasticsearch services
+     #+BEGIN_SRC command
+     service elasticsearch restart
+     #+END_SRC
+** Nginx confiuration
+   + Any request to make a call to Elasticseach API must pass through
+   nginx server as a proxy.  Hence Nginx is specially configured to
+   upstream all requests made to port 9400 to 9200.  Also, no
+   application must be able to delete the index of elasticsearch. A
+   confiuration is being made to disable DELETE API of Elasticsearch
+   and hence only server admin can delete the indexes of
+   elasticsearch.
+   + Below is the configuration for nginx as a proxy to elasticsearch and kibana 
+     #+BEGIN_SRC command
+     server {
+     listen 80;
+
+     server_name vlabs-analytics.vlabs.ac.in;
+
+     auth_basic "Restricted Access";
+     auth_basic_user_file /etc/nginx/htpasswd.users;
+     
+     #This configuration is to access Kibana dashboard on its default port 5601
+     location / {
+        proxy_pass http://localhost:5601;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;        
+       } #End location block
+ 
+    } #End server block
+ 
+    #Below upstream configuration is to upstream requests of port 9400 to 9200
+    upstream elasticsearch {
+        server localhost:9200;
+        keepalive 64;
+     }
+ 
+     server {
+       listen 9400;
+       server_name vlabs-analytics.vlabs.ac.in;
+       #client_max_body_size 50m;
+
+       location / {
+        #To disable DELETE API and allow only GET/POST feature
+        if ($request_method !~ ^(GET|POST)$ ) {
+              return 444;
+        }
+
+        proxy_pass http://elasticsearch;
+        proxy_redirect off;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_pass_header Access-Control-Allow-Origin;
+        proxy_pass_header Access-Control-Allow-Methods;
+        proxy_hide_header Access-Control-Allow-Headers;
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header Access-Control-Allow-Headers 'X-Requested-With, Content-Type';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        #add_header Access-Control-Allow-Credentials true;
+
+       }#End location block
+   }#End server block
+
+
+     #+END_SRC
