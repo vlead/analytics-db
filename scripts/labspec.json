@@ -92,7 +92,7 @@
 		  "sudo pip install Flask",
 		  "sudo pip install -U flask-cors",
 	          "sudo apt-get update", 
-	          "sudo apt-get upgrade",
+	          "sudo apt-get -y upgrade",
                   "sudo apt-get -y install redis-server",
                   "sudo service redis-server start",
                   "sudo apt-get udpate",
