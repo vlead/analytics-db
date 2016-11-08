@@ -1,0 +1,117 @@
+#+Title: Installing and setting up ELK server 
+#+Date: November 7, 2016
+#+Author: VLEAD Systems 
+
+* Introduction 
+  This document mentions the requirements, prerequisites, installation
+  steps and custom configuration used to set up ELK (Elasticsearch
+  Logstash Kibana server).
+
+* Requirements 
+  Following are the requirements -
+  + A server to store VLABS Open-edX analytics in a desired format (In
+    this case it is JSON format)
+  + A visualization tool to view logs stored/fetched. Hence Kibana.
+  + Also the same server can be used to store logs and generate
+    visualizations out of it.
+
+* Why ELK ?
+  + ELK is a combined solution given by elastic.co to store logs in
+    certain formats and then a visualization tool takes care of
+    visualization of obtained logs in the form of nice graphs. A user
+    can interact with ELK server using web based HTTP(S) API to write,
+    read, update, delete data into elasticsearch NOSQL database.
+  + There was no specific reason to choose NOSQL database, still VLABS
+    analaytics being in the form of document results choosing
+    elasticsearch as a good choice.
+  + The Kibana visualization tool needs minimal intervention to
+    produce graphs from the records/data stored in elasticsearch
+    database.
+  + As a result of this, ELK provides a complete package to satisfy
+    the requirements with minimal efforts.
+
+
+  
+* Design
+  + ELK is used as a data store and is independent of the service
+    willing to write into it.
+  + ELK is running behind an nginx proxy server and hence all sorts of
+    authentication, authorization, limting checks, security checks are
+    applied in the nginx configuration.
+  + ELK as a service is to be available to authenticated and
+    authorized users/services. Each application must create its index
+    and document.
+  + A simple diagram showing a flow of how a service and ELK service
+    will interact.
+
+*
+  
+   
+  
+
+  
+* Deployment
+** System/Machine specifications for installing ELK server 
+   |------+------------------+--------------|
+   | S.No | Component        |              |
+   |------+------------------+--------------|
+   |   1. | RAM              | 4 GB         |
+   |------+------------------+--------------|
+   |   2. | HDD              | 150 GB       |
+   |------+------------------+--------------|
+   |   3. | Operating System | Ubuntu 14.04 |
+   |------+------------------+--------------|
+   
+   
+   
+  
+** Install ELK
+   + Install Pre-requisites
+     #+BEGIN_SRC command
+     sudo apt-get update
+     sudo apt-get -y install build-essential
+     sudo apt-get -y install binutils
+     sudo apt-get -y install binutils-doc
+     sudo apt-get -y install python-dev python3-dev
+     sudo apt-get -y install python-pip
+     sudo apt-get -y install git
+     #+END_SRC
+   + Install Elasticsearch 
+     #+BEGIN_SRC command
+     wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+     echo 'deb http://packages.elastic.co/elasticsearch/2.x/debian stable main' | sudo tee -a /etc/apt/sources.list.d/elasticsearch-2.x.list
+     sudo apt-get update
+     sudo apt-get -y install elasticsearch
+     #+END_SRC
+   + Set elasticsearch service to start on server bootup and restart services
+     #+BEGIN_SRC command
+     sudo update-rc.d elasticsearch defaults 95 10
+     sudo service elasticsearch restart"
+     #+END_SRC
+   + Install Kibana and set kibana service to start on server bootup 
+     #+BEGIN_SRC command
+     echo 'deb http://packages.elastic.co/kibana/4.4/debian stable main' | sudo tee -a /etc/apt/sources.list.d/kibana-4.4.x.list
+     sudo apt-get update
+     sudo apt-get -y install kibana
+     sudo update-rc.d kibana defaults 96 9
+     sudo service kibana start
+     #+END_SRC
+   + Install logstash and set logstash service to start on server bootup
+     #+BEGIN_SRC command
+     echo 'deb http://packages.elastic.co/logstash/2.2/debian stable main' | sudo tee /etc/apt/sources.list.d/logstash-2.2.x.list 
+     sudo apt-get update
+     sudo apt-get -y install logstash
+     sudo update-rc.d logstash defaults 96 9
+     #+END_SRC
+   + Install Nginx
+     #+BEGIN_SRC command
+     sudo apt-get -y install nginx
+     sudo apt-get -y install apache2-utils
+     sudo service nginx restart
+     #+END_SRC
+   + Install redis server 
+     #+BEGIN_SRC command
+     sudo apt-get -y install redis-server
+     sudo service redis-server start
+     sudo apt-get update
+     #+END_SRC
