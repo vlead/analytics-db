@@ -99,7 +99,11 @@
                   "sudo apt-get -y install redis-server",
                   "sudo service redis-server start",
                   "sudo apt-get update",
-                  "sudo pip install redis"
+                  "sudo pip install redis",
+                  "sudo service elasticsearch start",
+                  "sudo service kibana start",
+                  "sudo service logstash start",
+                  "sudo service nginx start"
                 ],
                 "lab_actions": {
                     "backup": [],
