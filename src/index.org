@@ -31,7 +31,6 @@
     the requirements with minimal efforts.
 
 
-  
 * Design
   + ELK is used as a data store and is independent of the service
     willing to write into it.
@@ -49,7 +48,6 @@
    
   
 
-  
 * Installation
 ** System/Machine specifications for installing ELK server 
    |------+------------------+--------------|
@@ -63,8 +61,7 @@
    |------+------------------+--------------|
    
    
-   
-  
+     
 ** Install ELK
    + Install Pre-requisites
      #+BEGIN_SRC command
@@ -210,3 +207,24 @@
 
 
      #+END_SRC
+* Post Deployment
+   + Login to VM
+   + Install Java 8
+      #+BEGIN_SRC command
+       sudo apt-get install -y software-properties-common
+       sudo apt-get install -y python-software-properties
+       yes | sudo apt-add-repository ppa:webupd8team/java
+       sudo apt-get update
+       sudo apt-get install -y oracle-java8-installer 
+      #+END_SRC
+   + Configure nginx 
+       #+BEGIN_SRC command
+       cp /root/labs/elk-stack-for-analytics/scripts/elasticsearch-nginx.conf /etc/nginx/sites-enabled/default
+       #+END_SRC
+   + Restart services
+       #+BEGIN_SRC command
+       service nginx restart 
+       service elasticsearch restart
+       service kibana restart
+       service logstash restart
+       #+END_SRC
