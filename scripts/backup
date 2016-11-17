@@ -1,3 +1,18 @@
-#!/bin/bash
-# Since there is no data being used by feedback portal,
-# the script does nothing.
+#!/bin/sh
+
+DATE=`date +"%Y%m%d-%H%M"`
+MONTH_NAME=`date +"%b"`
+BKP_DIR="/root/backups/$MONTH_NAME"
+INDEX_NAME="vlabs"
+
+mkdir -p $BKP_DIR
+
+echo "`elasticdump --input=http://localhost:9400/$INDEX_NAME --output=$BKP_DIR/vlabs_mapping_$DATE.json --type=mapping`"
+echo "`elasticdump --input=http://localhost:9400/$INDEX_NAME --output=$BKP_DIR/vlabs_data_$DATE.json --type=data`"
+
+#cp -r /var/log/httpd $WORKSHOP_DIR/
+
+#echo "`tar -zcvf $WORKSHOP_FOLDER.tar.gz $WORKSHOP_FOLDER`"
+#echo "`cp $WORKSHOP_FOLDER.tar.gz ~/Desktop`" 
+#echo "`cp $WORKSHOP_FOLDER.tar.gz /home/$user/Desktop`" 
+
