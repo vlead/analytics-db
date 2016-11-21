@@ -84,6 +84,7 @@
    		  "sudo apt-get -y install elasticsearch",
  		  "sudo update-rc.d elasticsearch defaults 95 10",
 		  "sudo service elasticsearch restart",
+		  "sudo apt-get -y install curl",
                   "echo 'deb http://packages.elastic.co/kibana/4.4/debian stable main' | sudo tee -a /etc/apt/sources.list.d/kibana-4.4.x.list",
 		  "sudo apt-get update ",
                   "sudo apt-get -y install kibana",
