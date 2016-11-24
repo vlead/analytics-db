@@ -15,7 +15,8 @@
   + A DOCUMENT_TYPE in elasticseach is similar to a table in RDBMS.
   + Then comes records which are similar to rows/columns of a RDBMS.
   + Elasticsearch works on RESTful API. API for GET, POST, PUt, DELETE are used.
-
+  + For every request made to elasticsearch API, an ACK is returned as
+    a response or else the expected output.
 
 * Important commands for dealing with Elasticsearch database.
 
@@ -173,7 +174,58 @@ Once deleted, an ACK is given as shown below -
 {"acknowledged":true}
 #+END_SRC
 
+
+* Configuring string analyzer for Elasticsearch 
+Elasticsearch has default settings to analyze a string. For example
+see the example document given below -
+#+BEGIN_SRC 
+{
+"name" : "Ashay Maheshwari",
+"age" : "23" 
+#+END_SRC
+
+When visualizations are generated in kibana, you see different graphs
+for "Ashay" and "Maheshwari" even though it is a single value assigned
+to "name" key.
+
+To Override this default behavior, custom settings are done while
+creating an index.  To disable default string analyzer use the general
+syntax and example as shown -
+
+#+BEGIN_SRC 
+curl -XPUT http://<hostname>:<port-number>/<index-name> -d '{
+    "index" : {
+        "analysis" : {
+            "analyzer" : {
+                "default" : {
+                    "type" : "keyword"
+                }
+            }
+        }
+    }
+}'
+#+END_SRC
+The above command will create an index which does not exist and
+overrite the settings to disable analyzer.
+
+A example using the above command is -
+#+BEGIN_SRC 
+curl -XPUT localhost:9200/test-index -d '{
+    "index" : {
+        "analysis" : {
+            "analyzer" : {
+                "default" : {
+                    "type" : "keyword"
+                }
+            }
+        }
+    }
+}'
+#+END_SRC
+
+
 * References
   + https://www.elastic.co/products/elasticsearch
   + [[http://www.elasticsearchtutorial.com/elasticsearch-in-5-minutes.html][Elasticsearch in 5 mins]]
   + [[http://1.droppdf.com/files/FOeNs/elasticsearch-the-definitive-guide-clinton-gormley-zachary-tong.pdf][Elasticsearch Definitive Guide]]
+  + [[https://www.elastic.co/guide/en/elasticsearch/guide/current/analysis-intro.html][Elasticsearch String analyzer]]
