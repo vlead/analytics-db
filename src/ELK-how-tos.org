@@ -6,6 +6,7 @@
 * Introduction
   This document deals with basic concepts, commands/syntax to use Elasticsearch database.
 
+
 * Elasticsearch 
   + Elasticsearc is a opensource NoSQL database .
   + Elasticsearch is a distributed, RESTful search and analytics engine 
@@ -15,11 +16,52 @@
   + Then comes records which are similar to rows/columns of a RDBMS.
   + Elasticsearch works on RESTful API. API for GET, POST, PUt, DELETE are used.
 
+
 * Important commands for dealing with Elasticsearch database.
+
 ** Start/Stop/Check status of elasticsearch service
    #+BEGIN_SRC 
    $service elasticsearch <start/stop/restart/status>
    #+END_SRC
+
+
+** Create an index in elasticsearch 
+An index can be created using Elasticsearch API called using curl
+command or by using python-elasticsearch client.
+#+BEGIN_SRC 
+General syntax # curl -XPOST "http://<host-name>:<port-number>/<index-name>"
+root@vlabs-analytics:~# curl -XPOST "http://localhost:9200/test-index"
+#+END_SRC
+If index is successfully created you get a True ACK from elasticsearch
+server.
+#+BEGIN_SRC 
+{"acknowledged":true}
+#+END_SRC
+
+
+** Insert a record in elasticsearch database 
+To insert record/data in elasticsearch database, use GET API
+#+BEGIN_SRC c
+General Syntax # curl -XPOST "http://http://<hostname>:<port-number>/<index-name>/<doc-type>/[id-of-record]" -d 
+{
+ "key1" : "value1",
+ "KeyN" : "valueN"
+}'
+root@vlabs-analytics:~# curl -XPOST "http://localhost:9200/test-index/document-test/" -d '{"name":"Ashay", "age":"23"}'
+#+END_SRC
+If record is sucessfull inserted you get a ACK as shown -
+An ID for each record is dynamically generated, if it is not mentioned
+while inserting data.
+#+BEGIN_SRC 
+{
+"_index":"test-index",
+"_type":"document-test",
+"_id":"AViVv6dqvXkOVLf8Bz4E",
+"_version":1,
+"_shards":{"total":2,"successful":1,"failed":0},
+"created":true
+}
+#+END_SRC
 
 
 ** Check the status of elasticsearch using curl command
@@ -59,6 +101,7 @@ health status index   pri rep docs.count docs.deleted store.size pri.store.size
 yellow open   .kibana   1   1          1            0      3.1kb          3.1kb 
 yellow open   vlabs     5   1          0            0       795b           795b
 #+END_SRC
+
 
 ** Fetch records from index
 To obtain data from elasticsearch use the command as shown - 
@@ -118,6 +161,19 @@ Output obtained as given below -
 #+END_SRC
 
 
+** Delete an index in elasticsearch 
+Deleting an index will delete all documents under that index. 
+To DELETE an index, use the following command -
+#+BEGIN_SRC 
+General Syntax # curl -XDELETE "http://<hostname>:<port-number>/<index-name>"
+root@vlabs-analytics:~# curl -XDELETE "http://localhost:9200/test-index"
+#+END_SRC
+Once deleted, an ACK is given as shown below -
+#+BEGIN_SRC 
+{"acknowledged":true}
+#+END_SRC
+
 * References
   + https://www.elastic.co/products/elasticsearch
-  + 
+  + [[http://www.elasticsearchtutorial.com/elasticsearch-in-5-minutes.html][Elasticsearch in 5 mins]]
+  + [[http://1.droppdf.com/files/FOeNs/elasticsearch-the-definitive-guide-clinton-gormley-zachary-tong.pdf][Elasticsearch Definitive Guide]]
