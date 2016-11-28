@@ -1,0 +1,199 @@
+#+TITLE: Deploying the application on a server
+#+AUTHOR: VLEAD
+#+DATE: [2016-06-07 Tue]
+#+SETUPFILE: ../org-templates/level-1.org
+#+TAGS: boilerplate(b)
+#+EXCLUDE_TAGS: boilerplate
+#+OPTIONS: ^:nil
+
+* Introduction
+  This document will illustrate installation of all the dependencies required
+  for setting up the application.
+
+
+* Install dependendent python packages
+  Here we use the =setuptools= module from the standard lib, to make a
+  =setup.py= file, which will install all the python library
+  dependencies.  Python packages required are to be mentioned in the
+  requires list.
+
+#+BEGIN_SRC python :tangle setup.py :eval no
+from setuptools import setup
+
+requires = [
+    'flask',
+    'flask-cors',
+    'requests',
+    'elasticsearch'
+]
+
+setup(
+    name='analytics',
+    version='1.0',
+    install_requires=requires
+)
+
+#+END_SRC
+
+
+* Install all dependencies and setup the software
+  Install all dependencies, including the OS related packages, Python packages,
+  setup the database, configure the webserver, and finally deploy the
+  application.
+
+#+BEGIN_SRC sh :tangle setup.sh :eval no
+#!/bin/bash
+# Shell script to install deb package dependencies as well as python package
+# dependencies for dataservice.
+
+# if any proxy server
+#PROXY=""
+# file to store the generated password
+
+if [[ `id -u` -ne 0 ]]; then
+  echo "You have to execute this script as super user!"
+  exit 1;
+fi
+
+# Update the packages
+echo "Updating package cache.."
+apt-get -y update
+if [[ $? -ne 0 ]]; then
+  echo "Updating package cache failed!"
+  exit 1;
+fi
+
+# Install pre-requsite dependencies: python-dev, mysqld-dev, setuptools,
+# apache, mod_wsgi etc.
+echo "Installing pre-requisite dependencies.."
+apt-get install -y python-dev libmysqld-dev python-setuptools apache2 libapache2-mod-wsgi
+if [[ $? -ne 0 ]]; then
+  echo "FATAL: Installing pre-requisite dependencies failed!"
+  exit 1;
+fi
+
+echo "Enabling the mod WSGI on apache"
+a2enmod wsgi
+if [[ $? -ne 0 ]]; then
+  echo "FATAL: Unable to enable mod wsgi!"
+  exit 1;
+fi
+
+
+python setup.py install
+
+pip install Flask Flask-SQLAlchemy oursql requests flask-cors flask-testing
+
+if [[ $? -ne 0 ]]; then
+  echo "FATAL: Installation failed!"
+  exit 1;
+fi
+
+exit 0
+
+#+END_SRC
+
+
+* Configuring the application and its deployment
+  The following program configures the application, configures the web server
+  to use WSGI and use the application scripts.
+
+#+BEGIN_SRC sh :tangle configure.sh :eval no
+#!/bin/bash
+# Configure the application in the deployment environment
+# 1. Update the config.py file with appropriate values
+# 2. Update the apache config to server via WSGI
+# 3. Run the database setup scripts to setup the database
+
+if [[ `id -u` -ne 0 ]]; then
+  echo "You have to execute this script as super user!"
+  exit 1;
+fi
+
+ABS_PATH_DS=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+update_app_config () {
+  #CONFIG_FILE="../runtime/config/flask_app_config.py"
+
+  # the list of white-listed IPs for POST/PUT requests to data service
+  WHITELIST_IPS="['127.0.0.1']"
+
+  # the list of allowed domains for CORS
+  ALLOWED_ORIGINS="['*']"
+
+  echo "Updating config.py.."
+  # Update parts of the DB URI
+  # update WHITELIST_IPS
+  #sed -i "s/^WHITELIST_IPS.*$/WHITELIST_IPS = $WHITELIST_IPS/" $CONFIG_FILE
+  # update ALLOWED_ORIGINS
+  #sed -i "s/^ALLOWED_ORIGINS.*$/ALLOWED_ORIGINS = $ALLOWED_ORIGINS/" $CONFIG_FILE
+
+  # NOTE: this is hardcoded now..somehow the log file when dynamically created
+  # is owned by root. then the app fails to run.. hence the following is
+  # necessary
+}
+
+update_apache_config() {
+  PROC_NAME="analytics"
+  WSGI_SCRIPT="analytics.wsgi"
+  APACHE_VHOST_FILE="/etc/apache2/sites-available/default"
+
+  sed -i "/<\/VirtualHost>/i \
+    WSGIScriptAlias / $ABS_PATH_DS/$WSGI_SCRIPT
+  " $APACHE_VHOST_FILE
+
+  #sed -i '/<\/VirtualHost>/i \
+  #  WSGIDaemonProcess $PROC_NAME user=www-data group=www-data threads=5
+  #  WSGIScriptAlias / $ABS_PATH_DS/$WSGI_SCRIPT
+
+  #  <Directory $ABS_PATH_DS>
+  #    WSGIProcessGroup $PROC_NAME
+  #    WSGIApplicationGroup %{GLOBAL}
+  #    Order deny,allow
+  #    Allow from all
+  #  </Directory>
+  #' $APACHE_VHOST_FILE
+
+}
+
+update_app_config
+if [[ $? -ne 0 ]]; then
+  echo "FATAL: Failed to update application flask_app_config.py"
+  exit 1;
+fi
+update_apache_config
+if [[ $? -ne 0 ]]; then
+  echo "FATAL: Failed to update apache config"
+  exit 1;
+fi
+
+service apache2 restart
+export PYTHONPATH="/var/www"
+exit 0;
+
+#+END_SRC
+
+
+* Deploying the application
+
+#+BEGIN_SRC python :tangle analytics.wsgi :eval no
+
+import sys, os
+
+BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)))
+
+#sys.path.insert(0, BASE_DIR)
+sys.path.insert(0, BASE_DIR)
+
+from runtime.rest.app import create_app
+from runtime.config import flask_app_config as config
+
+application = create_app()
+
+#+END_SRC
+  
+
+* Tangle                                       :boilerplate:
+#+BEGIN_SRC python :eval no :tangle __init__.py
+print "deployment package"
+#+END_SRC

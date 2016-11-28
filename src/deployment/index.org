@@ -1,0 +1,41 @@
+#+TITLE: Configuring  the Nginx server
+#+AUTHOR: VLEAD
+#+DATE: [2016-06-07 Tue]
+#+SETUPFILE: ../org-templates/level-1.org
+#+TAGS: boilerplate(b)
+#+EXCLUDE_TAGS: boilerplate
+#+OPTIONS: ^:nil
+
+* Introduction
+  This document will illustrate the configuration requrired for Nginx 
+  to run ELK server. 
+
+
+* Install all dependencies and setup the software
+  Configure the Nginx with specific configuration for elasticsearch 
+
+#+BEGIN_SRC sh :tangle setup.sh :eval no
+#!/bin/bash
+# Shell script to install deb package dependencies as well as python package
+# dependencies for dataservice.
+
+# if any proxy server
+#PROXY=""
+# file to store the generated password
+
+if [[ `id -u` -ne 0 ]]; then
+  echo "You have to execute this script as super user!"
+  exit 1;
+fi
+
+echo "host:0.0.0.0" >> /etc/elasticsearch/elasticsearch.yml
+echo "port:9200" >> /etc/elasticsearch/elasticsearch.yml
+
+sudo cp /root/ovpl/elk-stack-for-analytics/scripts/elasticsearch-nginx.conf /etc/nginx/sites-enabled/default
+
+#+END_SRC
+
+* Tangle 				     			:boilerplate:
+#+BEGIN_SRC python :eval no :tangle __init__.py
+print "deployment package"
+#+END_SRC
