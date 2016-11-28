@@ -42,10 +42,6 @@
   + A simple diagram showing a flow of how a service and ELK service
     will interact.
 
-
-  
-   
-
 * Installation
 ** System/Machine specifications for installing ELK server 
    |------+------------------+--------------|
