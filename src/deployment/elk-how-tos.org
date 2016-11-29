@@ -1,0 +1,232 @@
+#+Title: How To's of Elasticsearch and Kibana 
+#+Date: November 24, 2016
+#+Author: VLEAD
+
+
+* Introduction
+  This document deals with basic concepts, commands/syntax to use Elasticsearch database.
+
+
+* Elasticsearch 
+  + Elasticsearc is a opensource NoSQL database .
+  + Elasticsearch is a distributed, RESTful search and analytics engine 
+  + Data in this database is stored in the form of a Document.
+  + Elasticsearch contains an INDEX which is similar to Database in RDBMS.
+  + A DOCUMENT_TYPE in elasticseach is similar to a table in RDBMS.
+  + Then comes records which are similar to rows/columns of a RDBMS.
+  + Elasticsearch works on RESTful API. API for GET, POST, PUt, DELETE are used.
+  + For every request made to elasticsearch API, an ACK is returned as
+    a response or else the expected output.
+
+
+* Important commands for dealing with Elasticsearch database.
+
+** Start/Stop/Check status of elasticsearch service
+   #+BEGIN_SRC 
+   $service elasticsearch <start/stop/restart/status>
+   #+END_SRC
+
+
+** Create an index in elasticsearch 
+An index can be created using Elasticsearch API called using curl
+command or by using python-elasticsearch client.
+#+BEGIN_SRC 
+General syntax # curl -XPOST "http://<host-name>:<port-number>/<index-name>"
+root@vlabs-analytics:~# curl -XPOST "http://localhost:9200/test-index"
+#+END_SRC
+If index is successfully created you get a True ACK from elasticsearch
+server.
+#+BEGIN_SRC 
+{"acknowledged":true}
+#+END_SRC
+
+
+** Insert a record in elasticsearch database 
+To insert record/data in elasticsearch database, use GET API
+#+BEGIN_SRC c
+General Syntax # curl -XPOST "http://http://<hostname>:<port-number>/<index-name>/<doc-type>/[id-of-record]" -d 
+{
+ "key1" : "value1",
+ "KeyN" : "valueN"
+}'
+root@vlabs-analytics:~# curl -XPOST "http://localhost:9200/test-index/document-test/" -d '{"name":"Ashay", "age":"23"}'
+#+END_SRC
+If record is sucessfull inserted you get a ACK as shown -
+An ID for each record is dynamically generated, if it is not mentioned
+while inserting data.
+#+BEGIN_SRC 
+{
+"_index":"test-index",
+"_type":"document-test",
+"_id":"AViVv6dqvXkOVLf8Bz4E",
+"_version":1,
+"_shards":{"total":2,"successful":1,"failed":0},
+"created":true
+}
+#+END_SRC
+
+
+** Check the status of elasticsearch using curl command
+
+#+BEGIN_SRC 
+General syntax # curl http://<hostname>:<port-number>
+root@vlabs-analytics:~# curl http://localhost:9200/
+#+END_SRC
+Above comand gives version information, cluster build time, cluster
+name of elastisearch. See given output is given below -
+#+BEGIN_SRC
+{
+  "name" : "Janus",
+  "cluster_name" : "elasticsearch",
+  "cluster_uuid" : "aUdpyb8BR3ieeLEj3q5Z7Q",
+  "version" : {
+    "number" : "2.4.1",
+    "build_hash" : "c67dc32e24162035d18d6fe1e952c4cbcbe79d16",
+    "build_timestamp" : "2016-09-27T18:57:55Z",
+    "build_snapshot" : false,
+    "lucene_version" : "5.5.2"
+  },
+  "tagline" : "You Know, for Search"
+}
+
+#+END_SRC
+
+
+** List the existing indexes in elasticsearch database 
+#+BEGIN_SRC 
+General Syntax # curl http://<hostname>:<port-number>/_cat/indices?v
+root@vlabs-analytics:~# curl http://localhost:9200/_cat/indices?v
+#+END_SRC
+Output for above command is -
+#+BEGIN_SRC 
+health status index   pri rep docs.count docs.deleted store.size pri.store.size 
+yellow open   .kibana   1   1          1            0      3.1kb          3.1kb 
+yellow open   vlabs     5   1          0            0       795b           795b
+#+END_SRC
+
+
+** Fetch records from index
+To obtain data from elasticsearch use the command as shown - 
+#+BEGIN_SRC 
+root@vlabs-analytics:~# curl -XGET "http://<hostname>:<port-number>/<index-name>/_search?pretty&size=<No-of-records>"
+root@vlabs-analytics:~# curl -XGET "http://localhost:9200/vlabs/_search?pretty&size=2"
+#+END_SRC
+Output obtained as given below -
+#+BEGIN_SRC 
+{
+  "took" : 1,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 5,
+    "successful" : 5,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : 2671,
+    "max_score" : 1.0,
+    "hits" : [ {
+      "_index" : "vlabs",
+      "_type" : "usage",
+      "_id" : "AVee00ocYbJBYuvGUfjp",
+      "_score" : 1.0,
+      "_source" : {
+        "LAB_ID" : "EEE06",
+        "DATE_OF_EXPERIMENT" : "2016-10-07",
+        "STUDENT_ID" : "student",
+        "REGION" : "Telangana",
+        "LAB_NAME" : "Virtual Power Lab",
+        "EXPERIMENT_NAME" : "To Study the over-current relay and the effect of PSM and TSM",
+        "EXPERIMENT_ID" : "E99850",
+        "TIME_OF_EXPERIMENT" : "11:07",
+        "IP_ADDRESS" : "14.139.82.6"
+      }
+    }, {
+      "_index" : "vlabs",
+      "_type" : "usage",
+      "_id" : "AVeew8TSYbJBYuvGUfjP",
+      "_score" : 1.0,
+      "_source" : {
+        "LAB_ID" : "CHEM01",
+        "DATE_OF_EXPERIMENT" : "2016-10-07",
+        "STUDENT_ID" : "student",
+        "REGION" : "Telangana",
+        "LAB_NAME" : "Chemical Engineering Lab",
+        "EXPERIMENT_NAME" : "Flow measurement by orificemeter and venturimeter",
+        "EXPERIMENT_ID" : "E99656",
+        "TIME_OF_EXPERIMENT" : "10:50",
+        "IP_ADDRESS" : "14.139.82.6"
+      }
+    } ]
+  }
+}
+
+#+END_SRC
+
+
+** Delete an index in elasticsearch 
+Deleting an index will delete all documents under that index. 
+To DELETE an index, use the following command -
+#+BEGIN_SRC 
+General Syntax # curl -XDELETE "http://<hostname>:<port-number>/<index-name>"
+root@vlabs-analytics:~# curl -XDELETE "http://localhost:9200/test-index"
+#+END_SRC
+Once deleted, an ACK is given as shown below -
+#+BEGIN_SRC 
+{"acknowledged":true}
+#+END_SRC
+
+
+* Configuring string analyzer for Elasticsearch 
+Elasticsearch has default settings to analyze a string. For example
+see the example document given below -
+#+BEGIN_SRC 
+{
+"name" : "Ashay Maheshwari",
+"age" : "23" 
+#+END_SRC
+
+When visualizations are generated in kibana, you see different graphs
+for "Ashay" and "Maheshwari" even though it is a single value assigned
+to "name" key.
+
+To Override this default behavior, custom settings are done while
+creating an index.  To disable default string analyzer use the general
+syntax and example as shown -
+
+#+BEGIN_SRC 
+curl -XPUT http://<hostname>:<port-number>/<index-name> -d '{
+    "index" : {
+        "analysis" : {
+            "analyzer" : {
+                "default" : {
+                    "type" : "keyword"
+                }
+            }
+        }
+    }
+}'
+#+END_SRC
+The above command will create an index which does not exist and
+overrite the settings to disable analyzer.
+
+A example using the above command is -
+#+BEGIN_SRC 
+curl -XPUT localhost:9200/test-index -d '{
+    "index" : {
+        "analysis" : {
+            "analyzer" : {
+                "default" : {
+                    "type" : "keyword"
+                }
+            }
+        }
+    }
+}'
+#+END_SRC
+
+
+* References
+  + https://www.elastic.co/products/elasticsearch
+  + [[http://www.elasticsearchtutorial.com/elasticsearch-in-5-minutes.html][Elasticsearch in 5 mins]]
+  + [[http://1.droppdf.com/files/FOeNs/elasticsearch-the-definitive-guide-clinton-gormley-zachary-tong.pdf][Elasticsearch Definitive Guide]]
+  + [[https://www.elastic.co/guide/en/elasticsearch/guide/current/analysis-intro.html][Elasticsearch String analyzer]]

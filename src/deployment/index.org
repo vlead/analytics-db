@@ -35,6 +35,7 @@ sudo cp /root/ovpl/elk-stack-for-analytics/scripts/elasticsearch-nginx.conf /etc
 
 #+END_SRC
 
+
 * Tangle 				     			:boilerplate:
 #+BEGIN_SRC python :eval no :tangle __init__.py
 print "deployment package"
