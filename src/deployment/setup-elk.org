@@ -18,6 +18,7 @@
   + For every request made to elasticsearch API, an ACK is returned as
     a response or else the expected output.
 
+
 * Installation
 
 ** System/Machine specifications for installing ELK server 
@@ -35,7 +36,7 @@
      
 ** Install ELK
    + Install Pre-requisites
-     #+BEGIN_SRC command
+     #+BEGIN_SRC command command
      sudo apt-get update
      sudo apt-get -y install build-essential
      sudo apt-get -y install binutils
@@ -47,7 +48,7 @@
      sudo apt-get install -y python-software-properties
      #+END_SRC
    + Install Java 8
-     #+BEGIN_SRC command
+     #+BEGIN_SRC command command
      yes | sudo apt-add-repository ppa:webupd8team/java
      sudo apt-get update
      sudo apt-get install -y oracle-java8-installer
@@ -94,7 +95,7 @@
 
 
 
-g* Server configuration
+* Server configuration
 ** Elasticsearch configuration
    Elasticsearch must be configured such that it must be available to
    the services willing to write data into it. To make this happen, we
@@ -181,11 +182,11 @@ g* Server configuration
 
      #+END_SRC
 
-
+     
 * Important commands for dealing with Elasticsearch database.
 
 ** Start/Stop/Check status of elasticsearch service
-   #+BEGIN_SRC 
+   #+BEGIN_SRC  command
    $service elasticsearch <start/stop/restart/status>
    #+END_SRC
 
@@ -193,20 +194,20 @@ g* Server configuration
 ** Create an index in elasticsearch 
 An index can be created using Elasticsearch API called using curl
 command or by using python-elasticsearch client.
-#+BEGIN_SRC 
+#+BEGIN_SRC  command
 General syntax # curl -XPOST "http://<host-name>:<port-number>/<index-name>"
 root@vlabs-analytics:~# curl -XPOST "http://localhost:9200/test-index"
 #+END_SRC
 If index is successfully created you get a True ACK from elasticsearch
 server.
-#+BEGIN_SRC 
+#+BEGIN_SRC command
 {"acknowledged":true}
 #+END_SRC
 
 
 ** Insert a record in elasticsearch database 
 To insert record/data in elasticsearch database, use GET API
-#+BEGIN_SRC c
+#+BEGIN_SRC command
 General Syntax # curl -XPOST "http://http://<hostname>:<port-number>/<index-name>/<doc-type>/[id-of-record]" -d 
 {
  "key1" : "value1",
@@ -217,7 +218,7 @@ root@vlabs-analytics:~# curl -XPOST "http://localhost:9200/test-index/document-t
 If record is sucessfull inserted you get a ACK as shown -
 An ID for each record is dynamically generated, if it is not mentioned
 while inserting data.
-#+BEGIN_SRC 
+#+BEGIN_SRC command
 {
 "_index":"test-index",
 "_type":"document-test",
@@ -231,13 +232,13 @@ while inserting data.
 
 ** Check the status of elasticsearch using curl command
 
-#+BEGIN_SRC 
+#+BEGIN_SRC command
 General syntax # curl http://<hostname>:<port-number>
 root@vlabs-analytics:~# curl http://localhost:9200/
 #+END_SRC
 Above comand gives version information, cluster build time, cluster
 name of elastisearch. See given output is given below -
-#+BEGIN_SRC
+#+BEGIN_SRC command
 {
   "name" : "Janus",
   "cluster_name" : "elasticsearch",
@@ -256,12 +257,12 @@ name of elastisearch. See given output is given below -
 
 
 ** List the existing indexes in elasticsearch database 
-#+BEGIN_SRC 
+#+BEGIN_SRC command
 General Syntax # curl http://<hostname>:<port-number>/_cat/indices?v
 root@vlabs-analytics:~# curl http://localhost:9200/_cat/indices?v
 #+END_SRC
 Output for above command is -
-#+BEGIN_SRC 
+#+BEGIN_SRC command
 health status index   pri rep docs.count docs.deleted store.size pri.store.size 
 yellow open   .kibana   1   1          1            0      3.1kb          3.1kb 
 yellow open   vlabs     5   1          0            0       795b           795b
@@ -270,12 +271,12 @@ yellow open   vlabs     5   1          0            0       795b           795b
 
 ** Fetch records from index
 To obtain data from elasticsearch use the command as shown - 
-#+BEGIN_SRC 
+#+BEGIN_SRC command
 root@vlabs-analytics:~# curl -XGET "http://<hostname>:<port-number>/<index-name>/_search?pretty&size=<No-of-records>"
 root@vlabs-analytics:~# curl -XGET "http://localhost:9200/vlabs/_search?pretty&size=2"
 #+END_SRC
 Output obtained as given below -
-#+BEGIN_SRC 
+#+BEGIN_SRC command
 {
   "took" : 1,
   "timed_out" : false,
@@ -329,12 +330,12 @@ Output obtained as given below -
 ** Delete an index in elasticsearch 
 Deleting an index will delete all documents under that index. 
 To DELETE an index, use the following command -
-#+BEGIN_SRC 
+#+BEGIN_SRC command
 General Syntax # curl -XDELETE "http://<hostname>:<port-number>/<index-name>"
 root@vlabs-analytics:~# curl -XDELETE "http://localhost:9200/test-index"
 #+END_SRC
 Once deleted, an ACK is given as shown below -
-#+BEGIN_SRC 
+#+BEGIN_SRC command
 {"acknowledged":true}
 #+END_SRC
 
@@ -342,7 +343,7 @@ Once deleted, an ACK is given as shown below -
 * Configuring string analyzer for Elasticsearch 
 Elasticsearch has default settings to analyze a string. For example
 see the example document given below -
-#+BEGIN_SRC 
+#+BEGIN_SRC command
 {
 "name" : "Ashay Maheshwari",
 "age" : "23" 
@@ -356,7 +357,7 @@ To Override this default behavior, custom settings are done while
 creating an index.  To disable default string analyzer use the general
 syntax and example as shown -
 
-#+BEGIN_SRC 
+#+BEGIN_SRC command
 curl -XPUT http://<hostname>:<port-number>/<index-name> -d '{
     "index" : {
         "analysis" : {
@@ -373,7 +374,7 @@ The above command will create an index which does not exist and
 overrite the settings to disable analyzer.
 
 A example using the above command is -
-#+BEGIN_SRC 
+#+BEGIN_SRC command
 curl -XPUT localhost:9200/test-index -d '{
     "index" : {
         "analysis" : {
