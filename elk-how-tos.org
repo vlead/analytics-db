@@ -18,6 +18,7 @@
   + For every request made to elasticsearch API, an ACK is returned as
     a response or else the expected output.
 
+
 * Important commands for dealing with Elasticsearch database.
 
 ** Start/Stop/Check status of elasticsearch service
