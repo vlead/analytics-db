@@ -31,6 +31,7 @@
 
 + [[../deployment/index.org][Deployment]]
 
+
 * Post Deployment
    + Login to VM
    + Configure nginx  ::
@@ -52,7 +53,8 @@
        service logstash restart
        #+END_SRC
   
-  
+* Restore elasticsearch 
+  http://stackoverflow.com/questions/25144034/how-to-copy-some-elasticsearch-data-to-a-new-index  
 
 * References
   + [[https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-ubuntu-14-04][Install ELK]]
