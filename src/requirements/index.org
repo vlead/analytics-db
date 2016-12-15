@@ -1,0 +1,21 @@
+#+TITLE: Configuring  the Nginx server
+#+AUTHOR: VLEAD
+#+DATE: [2016-06-07 Tue]
+#+SETUPFILE: ../org-templates/level-1.org
+#+TAGS: boilerplate(b)
+#+EXCLUDE_TAGS: boilerplate
+#+OPTIONS: ^:nil
+
+* Introduction
+  This document will illustrate the requirements of ELK server
+
+* Requirements
+  Following are the requirements -
+  + A server to store VLABS Open-edX analytics in a desired format (In
+    this case it is JSON format)
+  + A visualization tool to view logs stored/fetched. Hence Kibana.
+  + Also the same server can be used to store logs and generate
+    visualizations out of it.
+
+
+

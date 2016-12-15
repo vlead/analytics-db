@@ -1,0 +1,25 @@
+#+TITLE: Configuring  the Nginx server
+#+AUTHOR: VLEAD
+#+DATE: [2016-06-07 Tue]
+#+SETUPFILE: ../org-templates/level-1.org
+#+TAGS: boilerplate(b)
+#+EXCLUDE_TAGS: boilerplate
+#+OPTIONS: ^:nil
+
+* Introduction
+  This document will illustrate design. 
+
+
+* Design
+  + ELK is used as a data store and is independent of the service
+    willing to write into it.
+  + ELK is running behind an nginx proxy server and hence all sorts of
+    authentication, authorization, limting checks, security checks are
+    applied in the nginx configuration.
+  + ELK as a service is to be available to authenticated and
+    authorized users/services. Each application must create its index
+    and document.
+  + A simple diagram showing a flow of how a service and ELK service
+    will interact.
+
+    Open edX ----POST---> Analytics Server ---POST----> Elasticsearch <---------Fetch Analytics and draw graphs----- Kibana Dashboard 

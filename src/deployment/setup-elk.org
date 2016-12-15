@@ -1,0 +1,396 @@
+#+Title: How To's of Elasticsearch and Kibana 
+#+Date: November 24, 2016
+#+Author: VLEAD
+
+
+* Introduction
+  This document deals with basic concepts, commands/syntax to use Elasticsearch database.
+
+
+* Elasticsearch 
+  + Elasticsearch is a opensource NoSQL database .
+  + Elasticsearch is a distributed, RESTful search and analytics engine 
+  + Data in this database is stored in the form of a Document.
+  + Elasticsearch contains an INDEX which is similar to Database in RDBMS.
+  + A DOCUMENT_TYPE in elasticseach is similar to a table in RDBMS.
+  + Then comes records which are similar to rows/columns of a RDBMS.
+  + Elasticsearch works on RESTful API. API for GET, POST, PUt, DELETE are used.
+  + For every request made to elasticsearch API, an ACK is returned as
+    a response or else the expected output.
+
+
+* Installation
+
+** System/Machine specifications for installing ELK server 
+   |------+------------------+--------------|
+   | S.No | Component        |              |
+   |------+------------------+--------------|
+   |   1. | RAM              | 4 GB         |
+   |------+------------------+--------------|
+   |   2. | HDD              | 150 GB       |
+   |------+------------------+--------------|
+   |   3. | Operating System | Ubuntu 14.04 |
+   |------+------------------+--------------|
+   
+   
+     
+** Install ELK
+   + Install Pre-requisites
+     #+BEGIN_SRC command command
+     sudo apt-get update
+     sudo apt-get -y install build-essential
+     sudo apt-get -y install binutils
+     sudo apt-get -y install binutils-doc
+     sudo apt-get -y install python-dev python3-dev
+     sudo apt-get -y install python-pip
+     sudo apt-get -y install git
+     sudo apt-get install -y software-properties-common
+     sudo apt-get install -y python-software-properties
+     #+END_SRC
+   + Install Java 8
+     #+BEGIN_SRC command command
+     yes | sudo apt-add-repository ppa:webupd8team/java
+     sudo apt-get update
+     sudo apt-get install -y oracle-java8-installer
+     #+END_SRC
+   + Install Elasticsearch 
+     #+BEGIN_SRC command
+     wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+     echo 'deb http://packages.elastic.co/elasticsearch/2.x/debian stable main' | sudo tee -a /etc/apt/sources.list.d/elasticsearch-2.x.list
+     sudo apt-get update
+     sudo apt-get -y install elasticsearch
+     #+END_SRC
+   + Set elasticsearch service to start on server bootup and restart services
+     #+BEGIN_SRC command
+     sudo update-rc.d elasticsearch defaults 95 10
+     sudo service elasticsearch restart"
+     #+END_SRC
+   + Install Kibana and set kibana service to start on server bootup 
+     #+BEGIN_SRC command
+     echo 'deb http://packages.elastic.co/kibana/4.4/debian stable main' | sudo tee -a /etc/apt/sources.list.d/kibana-4.4.x.list
+     sudo apt-get update
+     sudo apt-get -y install kibana
+     sudo update-rc.d kibana defaults 96 9
+     sudo service kibana start
+     #+END_SRC
+   + Install logstash and set logstash service to start on server bootup
+     #+BEGIN_SRC command
+     echo 'deb http://packages.elastic.co/logstash/2.2/debian stable main' | sudo tee /etc/apt/sources.list.d/logstash-2.2.x.list 
+     sudo apt-get update
+     sudo apt-get -y install logstash
+     sudo update-rc.d logstash defaults 96 9
+     #+END_SRC
+   + Install Nginx
+     #+BEGIN_SRC command
+     sudo apt-get -y install nginx
+     sudo apt-get -y install apache2-utils
+     sudo service nginx restart
+     #+END_SRC
+   + Install redis server 
+     #+BEGIN_SRC command
+     sudo apt-get -y install redis-server
+     sudo service redis-server start
+     sudo apt-get update
+     #+END_SRC
+
+
+
+* Server configuration
+** Elasticsearch configuration
+   Elasticsearch must be configured such that it must be available to
+   the services willing to write data into it. To make this happen, we
+   need to configure elasticsearch to listen on specific port and
+   host.
+   + Open file /etc/elasticsearch/elasticsearch.yml
+     #+BEGIN_SRC command
+     vim /etc/elasticsearch/elasticsearch.yml
+     #+END_SRC
+   + Add the following lines at the end of the file 
+     #+BEGIN_SRC command
+     network.host: 0.0.0.0
+     http.port: 9200
+     #+END_SRC
+   + Save file and restart elasticsearch services
+     #+BEGIN_SRC command
+     service elasticsearch restart
+     #+END_SRC
+** Nginx confiuration
+   + Any request to make a call to Elasticseach API must pass through
+   nginx server as a proxy.  Hence Nginx is specially configured to
+   upstream all requests made to port 9400 to 9200.  Also, no
+   application must be able to delete the index of elasticsearch. A
+   confiuration is being made to disable DELETE API of Elasticsearch
+   and hence only server admin can delete the indexes of
+   elasticsearch.
+   + Below is the configuration for nginx as a proxy to elasticsearch and kibana 
+     #+BEGIN_SRC command
+     server {
+     listen 80;
+
+     server_name vlabs-analytics.vlabs.ac.in;
+
+     auth_basic "Restricted Access";
+     auth_basic_user_file /etc/nginx/htpasswd.users;
+     
+     #This configuration is to access Kibana dashboard on its default port 5601
+     location / {
+        proxy_pass http://localhost:5601;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;        
+       } #End location block
+ 
+    } #End server block
+ 
+    #Below upstream configuration is to upstream requests of port 9400 to 9200
+    upstream elasticsearch {
+        server localhost:9200;
+        keepalive 64;
+     }
+ 
+     server {
+       listen 9400;
+       server_name vlabs-analytics.vlabs.ac.in;
+       #client_max_body_size 50m;
+
+       location / {
+        #To disable DELETE API and allow only GET/POST feature
+        if ($request_method !~ ^(GET|POST)$ ) {
+              return 444;
+        }
+
+        proxy_pass http://elasticsearch;
+        proxy_redirect off;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_pass_header Access-Control-Allow-Origin;
+        proxy_pass_header Access-Control-Allow-Methods;
+        proxy_hide_header Access-Control-Allow-Headers;
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header Access-Control-Allow-Headers 'X-Requested-With, Content-Type';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+        #add_header Access-Control-Allow-Credentials true;
+
+       }#End location block
+   }#End server block
+
+
+     #+END_SRC
+
+     
+* Important commands for dealing with Elasticsearch database.
+
+** Start/Stop/Check status of elasticsearch service
+   #+BEGIN_SRC  command
+   $service elasticsearch <start/stop/restart/status>
+   #+END_SRC
+
+
+** Create an index in elasticsearch 
+An index can be created using Elasticsearch API called using curl
+command or by using python-elasticsearch client.
+#+BEGIN_SRC  command
+General syntax # curl -XPOST "http://<host-name>:<port-number>/<index-name>"
+root@vlabs-analytics:~# curl -XPOST "http://localhost:9200/test-index"
+#+END_SRC
+If index is successfully created you get a True ACK from elasticsearch
+server.
+#+BEGIN_SRC command
+{"acknowledged":true}
+#+END_SRC
+
+
+** Insert a record in elasticsearch database 
+To insert record/data in elasticsearch database, use GET API
+#+BEGIN_SRC command
+General Syntax # curl -XPOST "http://http://<hostname>:<port-number>/<index-name>/<doc-type>/[id-of-record]" -d 
+{
+ "key1" : "value1",
+ "KeyN" : "valueN"
+}'
+root@vlabs-analytics:~# curl -XPOST "http://localhost:9200/test-index/document-test/" -d '{"name":"Ashay", "age":"23"}'
+#+END_SRC
+If record is sucessfull inserted you get a ACK as shown -
+An ID for each record is dynamically generated, if it is not mentioned
+while inserting data.
+#+BEGIN_SRC command
+{
+"_index":"test-index",
+"_type":"document-test",
+"_id":"AViVv6dqvXkOVLf8Bz4E",
+"_version":1,
+"_shards":{"total":2,"successful":1,"failed":0},
+"created":true
+}
+#+END_SRC
+
+
+** Check the status of elasticsearch using curl command
+
+#+BEGIN_SRC command
+General syntax # curl http://<hostname>:<port-number>
+root@vlabs-analytics:~# curl http://localhost:9200/
+#+END_SRC
+Above comand gives version information, cluster build time, cluster
+name of elastisearch. See given output is given below -
+#+BEGIN_SRC command
+{
+  "name" : "Janus",
+  "cluster_name" : "elasticsearch",
+  "cluster_uuid" : "aUdpyb8BR3ieeLEj3q5Z7Q",
+  "version" : {
+    "number" : "2.4.1",
+    "build_hash" : "c67dc32e24162035d18d6fe1e952c4cbcbe79d16",
+    "build_timestamp" : "2016-09-27T18:57:55Z",
+    "build_snapshot" : false,
+    "lucene_version" : "5.5.2"
+  },
+  "tagline" : "You Know, for Search"
+}
+
+#+END_SRC
+
+
+** List the existing indexes in elasticsearch database 
+#+BEGIN_SRC command
+General Syntax # curl http://<hostname>:<port-number>/_cat/indices?v
+root@vlabs-analytics:~# curl http://localhost:9200/_cat/indices?v
+#+END_SRC
+Output for above command is -
+#+BEGIN_SRC command
+health status index   pri rep docs.count docs.deleted store.size pri.store.size 
+yellow open   .kibana   1   1          1            0      3.1kb          3.1kb 
+yellow open   vlabs     5   1          0            0       795b           795b
+#+END_SRC
+
+
+** Fetch records from index
+To obtain data from elasticsearch use the command as shown - 
+#+BEGIN_SRC command
+root@vlabs-analytics:~# curl -XGET "http://<hostname>:<port-number>/<index-name>/_search?pretty&size=<No-of-records>"
+root@vlabs-analytics:~# curl -XGET "http://localhost:9200/vlabs/_search?pretty&size=2"
+#+END_SRC
+Output obtained as given below -
+#+BEGIN_SRC command
+{
+  "took" : 1,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 5,
+    "successful" : 5,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : 2671,
+    "max_score" : 1.0,
+    "hits" : [ {
+      "_index" : "vlabs",
+      "_type" : "usage",
+      "_id" : "AVee00ocYbJBYuvGUfjp",
+      "_score" : 1.0,
+      "_source" : {
+        "LAB_ID" : "EEE06",
+        "DATE_OF_EXPERIMENT" : "2016-10-07",
+        "STUDENT_ID" : "student",
+        "REGION" : "Telangana",
+        "LAB_NAME" : "Virtual Power Lab",
+        "EXPERIMENT_NAME" : "To Study the over-current relay and the effect of PSM and TSM",
+        "EXPERIMENT_ID" : "E99850",
+        "TIME_OF_EXPERIMENT" : "11:07",
+        "IP_ADDRESS" : "14.139.82.6"
+      }
+    }, {
+      "_index" : "vlabs",
+      "_type" : "usage",
+      "_id" : "AVeew8TSYbJBYuvGUfjP",
+      "_score" : 1.0,
+      "_source" : {
+        "LAB_ID" : "CHEM01",
+        "DATE_OF_EXPERIMENT" : "2016-10-07",
+        "STUDENT_ID" : "student",
+        "REGION" : "Telangana",
+        "LAB_NAME" : "Chemical Engineering Lab",
+        "EXPERIMENT_NAME" : "Flow measurement by orificemeter and venturimeter",
+        "EXPERIMENT_ID" : "E99656",
+        "TIME_OF_EXPERIMENT" : "10:50",
+        "IP_ADDRESS" : "14.139.82.6"
+      }
+    } ]
+  }
+}
+
+#+END_SRC
+
+
+** Delete an index in elasticsearch 
+Deleting an index will delete all documents under that index. 
+To DELETE an index, use the following command -
+#+BEGIN_SRC command
+General Syntax # curl -XDELETE "http://<hostname>:<port-number>/<index-name>"
+root@vlabs-analytics:~# curl -XDELETE "http://localhost:9200/test-index"
+#+END_SRC
+Once deleted, an ACK is given as shown below -
+#+BEGIN_SRC command
+{"acknowledged":true}
+#+END_SRC
+
+
+* Configuring string analyzer for Elasticsearch 
+Elasticsearch has default settings to analyze a string. For example
+see the example document given below -
+#+BEGIN_SRC command
+{
+"name" : "Ashay Maheshwari",
+"age" : "23" 
+#+END_SRC
+
+When visualizations are generated in kibana, you see different graphs
+for "Ashay" and "Maheshwari" even though it is a single value assigned
+to "name" key.
+
+To Override this default behavior, custom settings are done while
+creating an index.  To disable default string analyzer use the general
+syntax and example as shown -
+
+#+BEGIN_SRC command
+curl -XPUT http://<hostname>:<port-number>/<index-name> -d '{
+    "index" : {
+        "analysis" : {
+            "analyzer" : {
+                "default" : {
+                    "type" : "keyword"
+                }
+            }
+        }
+    }
+}'
+#+END_SRC
+The above command will create an index which does not exist and
+overrite the settings to disable analyzer.
+
+A example using the above command is -
+#+BEGIN_SRC command
+curl -XPUT localhost:9200/test-index -d '{
+    "index" : {
+        "analysis" : {
+            "analyzer" : {
+                "default" : {
+                    "type" : "keyword"
+                }
+            }
+        }
+    }
+}'
+#+END_SRC
+
+
+* References
+  + https://www.elastic.co/products/elasticsearch
+  + [[http://www.elasticsearchtutorial.com/elasticsearch-in-5-minutes.html][Elasticsearch in 5 mins]]
+  + [[http://1.droppdf.com/files/FOeNs/elasticsearch-the-definitive-guide-clinton-gormley-zachary-tong.pdf][Elasticsearch Definitive Guide]]
+  + [[https://www.elastic.co/guide/en/elasticsearch/guide/current/analysis-intro.html][Elasticsearch String analyzer]]
