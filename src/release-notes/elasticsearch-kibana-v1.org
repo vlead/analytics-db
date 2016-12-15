@@ -6,10 +6,17 @@
   This document describes the release notes of =Elasticsearch Kiabana server=
   versio =v1.0=.
 
+
+* Features 
+  + Store VLABS Open edX user analytics in Elasticsearch database in
+    JSON format.
+  + A VLABS Analytics Dashboard containing graphs for analytics.
+
 * Landing Page :
   + Access Kibana landing page using http://vlabs-analytics.vlabs.ac.in .
   + Access [[http://vlabs-analytics.vlabs.ac.in:80/goto/b1c86f6532f953a642e09cde5f8a00f7][Vlabs Analytics Dashboard]] to view graphs .
  
+
 * Admin Account :
   - Admin and username available in password file. Contact Systems team. 
 
