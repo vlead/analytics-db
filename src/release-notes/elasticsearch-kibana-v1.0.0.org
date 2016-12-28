@@ -1,10 +1,10 @@
-#+TITLE: Elasticsearch Kibana Server Version V1.0
+#+TITLE: Elasticsearch Kibana Server Version V1.0.0
 #+AUTHOR: VLEAD
 #+DATE: [2016-12-15]
 
 * Introduction
   This document describes the release notes of =Elasticsearch Kiabana server=
-  versio =v1.0=.
+  versio =v1.0.0=.
 
 
 * Features 
@@ -14,7 +14,7 @@
 
 * Landing Page :
   + Access Kibana landing page using http://vlabs-analytics.vlabs.ac.in .
-  + Access [[http://vlabs-analytics.vlabs.ac.in:80/goto/b1c86f6532f953a642e09cde5f8a00f7][Vlabs Analytics Dashboard]] to view graphs .
+  + Access [[http://open-edx.vlabs.ac.in:5959/analytics/analytics/iframe-src.html][VLABS Analytics Dashboard]] to view graphs .
  
 
 * Admin Account :
