@@ -25,11 +25,11 @@
 
   
 
-+ [[../requirements/index.org][Requirements]]
++ [[./requirements/index.org][Requirements]]
 
-+ [[../design/index.org][Design]]
++ [[./design/index.org][Design]]
 
-+ [[../deployment/index.org][Deployment]]
++ [[./deployment/index.org][Deployment]]
 
 
 * Post Deployment
