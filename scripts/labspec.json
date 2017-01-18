@@ -97,12 +97,7 @@
 	          "sudo apt-get -y install nginx",
 	          "sudo apt-get -y install apache2-utils",
                   "sudo service nginx restart",
-	          "sudo apt-get update", 
-	          "sudo apt-get -y upgrade",
-                  "sudo apt-get -y install redis-server",
-                  "sudo service redis-server start",
-                  "sudo apt-get update",
-                  "sudo pip install elasticsearch"
+                  "sudo apt-get update"
                 ],
                 "lab_actions": {
                     "backup": [],
