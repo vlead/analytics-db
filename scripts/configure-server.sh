@@ -6,8 +6,8 @@
 #port: 9200
 
 
-echo "host:0.0.0.0" >> /etc/elasticsearch/elasticsearch.yml
-echo "port:9200" >> /etc/elasticsearch/elasticsearch.yml
+echo "network.host: 0.0.0.0" >> /etc/elasticsearch/elasticsearch.yml
+echo "http.port: 9200" >> /etc/elasticsearch/elasticsearch.yml
 
 #Restart elasticsearch services
 echo `sudo service elasticsearch restart`
@@ -18,6 +18,7 @@ echo `sudo service nginx restart`
 
 
 #Create an elasticsearch index named vlabs and then disable string analyzer in it
+#curl -XPUT http://vlabs-analytics.vlabs.ac.in:9200/<index-name> -d '{"index" : { "analysis" : { "analyzer" : { "default" : { "type" : "keyword" } } } } }'
 curl -XPUT http://vlabs-analytics.vlabs.ac.in:9200/vlabs -d '{"index" : { "analysis" : { "analyzer" : { "default" : { "type" : "keyword" } } } } }'
-
+curl -XPUT http://vlabs-analytics.vlabs.ac.in:9200/feedback -d '{"index" : { "analysis" : { "analyzer" : { "default" : { "type" : "keyword" } } } } }'
 
