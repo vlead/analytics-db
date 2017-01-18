@@ -389,6 +389,117 @@ curl -XPUT localhost:9200/test-index -d '{
 #+END_SRC
 
 
+* Query DSL for elasticsearch 
+** Fetch records matching the specific string from a field
+   Given below is the syntax to serach for a specific string in a
+   specific field.
+   #+BEGIN_SRC command
+     GET /<index-name>/<doc-type>/_search?pretty&size=<no-of-records>
+   {
+    "query" : {
+                        "term" : { 
+                    "<Field-name>" : "<field value to search for>"
+                }
+            }
+        }
+   #+END_SRC
+   Example run is given below -  
+   #+BEGIN_SRC command
+  GET /vlabs/usage/_search?pretty&size=50
+   {
+    "query" : {
+       "term" : { 
+                    "REGION" : "Telangana"
+                }
+            }
+        }
+    
+   #+END_SRC
+   Hence a search based on the string value of a filed in record is done 
+   using =term= keyword of Elasticsearch Query DSL
+
+** To fetch analytics for a specific date 
+   Use the below query-
+   #+BEGIN_SRC command
+   GET /vlabs/usage/_search?pretty&size=50
+   {
+    "query" : {
+                        "term" : { 
+                    "DATE_OF_EXPERIMENT" : "2016-10-07"
+                }
+            }
+        }
+   #+END_SRC
+  Returns all the records added having date mentioned.
+  Sample output is given below for 3 records 
+  #+BEGIN_SRC command
+  {
+  "took": 7,
+  "timed_out": false,
+  "_shards": {
+    "total": 5,
+    "successful": 5,
+    "failed": 0
+  },
+  "hits": {
+    "total": 87,
+    "max_score": 4.942464,
+    "hits": [
+      {
+        "_index": "vlabs",
+        "_type": "usage",
+        "_id": "AVefLTSmYbJBYuvGUfkx",
+        "_score": 4.942464,
+        "_source": {
+          "LAB_ID": "MECH48",
+          "DATE_OF_EXPERIMENT": "2016-10-07",
+          "STUDENT_ID": "student",
+          "REGION": "Telangana",
+          "LAB_NAME": "Virtual Combustion and Atomization Laboratory",
+          "EXPERIMENT_NAME": "Numerical characterization of laminar premixed methane-air flames",
+          "EXPERIMENT_ID": "E99433",
+          "TIME_OF_EXPERIMENT": "12:46",
+          "IP_ADDRESS": "14.139.82.6"
+        }
+      },
+      {
+        "_index": "vlabs",
+        "_type": "usage",
+        "_id": "AVee7i6hYbJBYuvGUfkA",
+        "_score": 4.942464,
+        "_source": {
+          "LAB_ID": "ECE40",
+          "DATE_OF_EXPERIMENT": "2016-10-07",
+          "STUDENT_ID": "student",
+          "REGION": "Telangana",
+          "LAB_NAME": "Electronic Devices and Circuits",
+          "EXPERIMENT_NAME": "I-V Characteristics and Fabrication of p-n junction Diode",
+          "EXPERIMENT_ID": "E99646",
+          "TIME_OF_EXPERIMENT": "11:37",
+          "IP_ADDRESS": "14.139.82.6"
+        }
+      },
+      {
+        "_index": "vlabs",
+        "_type": "usage",
+        "_id": "AVefEWpPYbJBYuvGUfkh",
+        "_score": 4.942464,
+        "_source": {
+          "LAB_ID": "BIOTECH25",
+          "DATE_OF_EXPERIMENT": "2016-10-07",
+          "STUDENT_ID": "student",
+          "REGION": "Telangana",
+          "LAB_NAME": "Virtual Proteomics Laboratory",
+          "EXPERIMENT_NAME": "In-gel digestion of proteins for MS analysis",
+          "EXPERIMENT_ID": "E99613",
+          "TIME_OF_EXPERIMENT": "12:15",
+          "IP_ADDRESS": "14.139.82.6"
+        }
+      }
+    ]
+  }
+}
+  #+END_SRC
 * References
   + https://www.elastic.co/products/elasticsearch
   + [[http://www.elasticsearchtutorial.com/elasticsearch-in-5-minutes.html][Elasticsearch in 5 mins]]
