@@ -97,8 +97,7 @@
 	          "sudo apt-get -y install nginx",
 	          "sudo apt-get -y install apache2-utils",
                   "sudo service nginx restart",
-                  "sudo apt-get update",
-	          "sh configure-server.sh"
+                  "sudo apt-get update"
                 ],
                 "lab_actions": {
                     "backup": [],
