@@ -12,7 +12,7 @@ echo `sudo service elasticsearch restart`
   - Save nginx configuration to /etc/nginx/sites-enabled/default and
     restart nginx
 #+BEGIN_SRC 
-cd /root/labs/
+cd /root/labs/elk-stack-for-analytics/scripts
 echo `sudo cp elasticsearch-nginx.conf /etc/nginx/sites-enabled/default`
 echo `sudo service nginx restart`
 #+END_SRC
