@@ -1,4 +1,5 @@
-* Configure Elasticsearch
+* Post Installation Steps
+** Configure Elasticsearch
   - Add below configuration to access =elasticsearch= service from
     outside network
 #+BEGIN_SRC
