@@ -23,3 +23,5 @@
     will interact.
 
     Open edX ----POST---> Analytics Server ---POST----> Elasticsearch <---------Fetch Analytics and draw graphs----- Kibana Dashboard 
+
+   [[./analytics-design-for-vlabs-openedx.jpg]]
