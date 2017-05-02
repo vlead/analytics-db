@@ -22,8 +22,6 @@
   + As a result of this, ELK provides a complete package to satisfy
     the requirements with minimal efforts.
 
-  
-
 + [[./requirements/index.org][Requirements]]
 
 + [[./design/index.org][Design]]
@@ -37,4 +35,4 @@
   + [[https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-ubuntu-14-04][Install ELK]]
   + [[https://www.elastic.co/][Learn ELK]]
   + [[http://www.webupd8.org/2014/03/how-to-install-oracle-java-8-in-debian.html][Install Java 8]]
-  
+  + [[https://github.com/vlead/kt-sessions/blob/master/src/aashay/index.org#elk-videos][Demo video tutorials for Kibana dashboard and ELK]]
