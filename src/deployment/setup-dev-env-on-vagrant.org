@@ -1,0 +1,97 @@
+* Introduction
+  This document describes the steps to run elasticsearch service behind =nginx=
+  on VM using vagrant
+* Steps to run =elasticsearch= service behind =nginx= on port =80=
+- [[https://github.com/vlead/vlead-templates/blob/develop/vagrant-boxes/export-vagrant-box.org#steps-to-create-vm-using-vagrant][Create VM]] using vagrant 
+- Update VM
+#+BEGIN_EXAMPLE
+sudo apt-get update -y
+#+END_EXAMPLE
+- Install the software-properties-common Package
+#+BEGIN_EXAMPLE
+sudo apt-get install software-properties-common python-software-properties
+#+END_EXAMPLE
+- To install OpenJDK, run
+#+BEGIN_EXAMPLE
+sudo add-apt-repository ppa:webupd8team/java
+sudo apt-get update
+sudo apt-get install openjdk-6-jre
+#+END_EXAMPLE
+- Adding Elasticsearch Repository
+#+BEGIN_EXAMPLE
+wget -O - http://packages.elasticsearch.org/GPG-KEY-elasticsearch | sudo apt-key add -
+#+END_EXAMPLE
+- Add the following line to the file /etc/apt/sources.list.d/elasticsearch.list
+#+BEGIN_EXAMPLE
+deb http://packages.elasticsearch.org/elasticsearch/1.1/debian stable main
+#+END_EXAMPLE
+- Now let us install ElasticSearch by running the following commands.
+#+BEGIN_EXAMPLE
+sudo apt-get update
+sudo apt-get install elasticsearch
+#+END_EXAMPLE
+- Start Elasticsearch with the command
+#+BEGIN_EXAMPLE
+sudo service elasticsearch start
+#+END_EXAMPLE
+- Setting up nginx
+#+BEGIN_EXAMPLE
+sudo apt-get install nginx
+#+END_EXAMPLE
+- We need to now start nginx, which can be done using either the command
+#+BEGIN_EXAMPLE
+sudo service nginx start
+#+END_EXAMPLE
+- Routing the requests through nginx
+  + First lets disable Elasticsearch from receiving external requests. In the
+    elasticsearch server, open the file /etc/elasticsearch/elasticsearch.yml
+    for editting. Comment out the config network.bind_host and
+    network.publish_host.
+#+BEGIN_EXAMPLE
+#network.bind_host: #some_value
+#network.publish_host: #some_other_value 
+network.host: localhost
+#+END_EXAMPLE
+- Check by restarting service
+#+BEGIN_EXAMPLE
+sudo service elasticsearch restart
+#+END_EXAMPLE
+- Run elasticsearch behind nginx
+  + To accomplish that, we need to create a file
+    /etc/nginx/sites-available/elasticsearch with the following content.
+#+BEGIN_EXAMPLE
+server {
+    listen 80;
+    server_name localhost;
+    location / {
+        rewrite ^/(.*) /$1 break;
+        proxy_ignore_client_abort on;
+        proxy_pass http://localhost:9200;
+        proxy_redirect http://localhost:9200 http://localhost/;
+        proxy_set_header  X-Real-IP  $remote_addr;
+        proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header  Host $http_host;
+    }
+}
+#+END_EXAMPLE
+- Create symbolic link to nginx virtual conf file =elasticsearch=
+#+BEGIN_EXAMPLE
+sudo ln /etc/nginx/sites-available/elasticsearch /etc/nginx/sites-enabled/
+#+END_EXAMPLE
+- Remove =default= file from =nginx=
+#+BEGIN_EXAMPLE
+rm /etc/nginx/sites-enabled/default
+#+END_EXAMPLE
+- Reload nginx
+#+BEGIN_EXAMPLE
+sudo service nginx reload
+#+END_EXAMPLE
+- Run =nginx= and =elasticsearch= on boot time
+#+BEGIN_EXAMPLE
+sudo update-rc.d nginx defaults
+sudo update-rc.d elasticsearch defaults
+#+END_EXAMPLE
+- Access elasticsearch on browser
+#+BEGIN_EXAMPLE
+firefox http://localhost
+#+END_EXAMPLE
