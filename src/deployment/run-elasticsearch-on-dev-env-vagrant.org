@@ -9,34 +9,30 @@ sudo apt-get update -y
 #+END_EXAMPLE
 - Install the software-properties-common Package
 #+BEGIN_EXAMPLE
-sudo apt-get install software-properties-common python-software-properties
+sudo apt-get install software-properties-common python-software-properties -y
 #+END_EXAMPLE
 - To install OpenJDK, run
 #+BEGIN_EXAMPLE
-sudo add-apt-repository ppa:webupd8team/java
-sudo apt-get update
-sudo apt-get install openjdk-6-jre
+sudo apt-add-repository ppa:webupd8team/java -y
+sudo apt-get update -y
+echo 'oracle-java8-installer shared/accepted-oracle-license-v1-1 select true' | sudo debconf-set-selections
+sudo apt-get install oracle-java8-installer -y
 #+END_EXAMPLE
-- Adding Elasticsearch Repository
+- Install elasticsearch =v1.7.2=
 #+BEGIN_EXAMPLE
+wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.2.deb && dpkg -i elasticsearch-1.7.2.deb
+
+
 wget -O - http://packages.elasticsearch.org/GPG-KEY-elasticsearch | sudo apt-key add -
 #+END_EXAMPLE
-- Add the following line to the file /etc/apt/sources.list.d/elasticsearch.list
-#+BEGIN_EXAMPLE
-deb http://packages.elasticsearch.org/elasticsearch/1.1/debian stable main
-#+END_EXAMPLE
-- Now let us install ElasticSearch by running the following commands.
-#+BEGIN_EXAMPLE
-sudo apt-get update
-sudo apt-get install elasticsearch
-#+END_EXAMPLE
+
 - Start Elasticsearch with the command
 #+BEGIN_EXAMPLE
 sudo service elasticsearch start
 #+END_EXAMPLE
-- Setting up nginx
+- Install nginx web server
 #+BEGIN_EXAMPLE
-sudo apt-get install nginx
+sudo apt-get install nginx -y
 #+END_EXAMPLE
 - We need to now start nginx, which can be done using either the command
 #+BEGIN_EXAMPLE
@@ -90,6 +86,7 @@ rm /etc/nginx/sites-enabled/default
 - Reload nginx
 #+BEGIN_EXAMPLE
 sudo service nginx reload
+sudo service nginx restart
 #+END_EXAMPLE
 - Run =nginx= and =elasticsearch= on boot time
 #+BEGIN_EXAMPLE
