@@ -72,6 +72,10 @@ server {
 }
 
 #+END_EXAMPLE
+- Setup credentials
+#+BEGIN_EXAMPLE
+htpasswd -c /etc/nginx/.htpasswd username
+#+END_EXAMPLE
 - Create symbolic link to nginx virtual conf file =elasticsearch=
 #+BEGIN_EXAMPLE
 sudo ln /etc/nginx/sites-available/elasticsearch /etc/nginx/sites-enabled/
