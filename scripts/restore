@@ -1,0 +1,2 @@
+# POST API call to restore backup
+curl -XPOST 'http://localhost:9200/_snapshot/analytics_backup/name_backup/_restore'

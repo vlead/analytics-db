@@ -1,18 +1,24 @@
-#!/bin/sh
+############# backup directory #############3333
+#path to directory where all elastic backup is stored
+BACKUP_DIR=/home/backups
+DATE=`date +%Y-%m-%d`
+mkdir $BACKUP_DIR
 
-DATE=`date +"%Y%m%d-%H%M"`
-MONTH_NAME=`date +"%b"`
-BKP_DIR="/root/backups/$MONTH_NAME"
-INDEX_NAME="vlabs"
+# Assign ownership permision to $BACKUP_DIR for elasticsearch user
+chown -R elasticsearch:elasticsearch /home/backups
 
-mkdir -p $BKP_DIR
+# Setup path.repo path to $BACKUP_DIR for elasticsearch to indentify where backup should be stored
+echo 'path.repo : /home/backups' >> /etc/elasticsearch/elasticsearch.yml
 
-echo "`elasticdump --input=http://localhost:9400/$INDEX_NAME --output=$BKP_DIR/vlabs_mapping_$DATE.json --type=mapping`"
-echo "`elasticdump --input=http://localhost:9400/$INDEX_NAME --output=$BKP_DIR/vlabs_data_$DATE.json --type=data`"
+# Install curl to make API calls to elasticsearch
+apt-get install curl -y
 
-#cp -r /var/log/httpd $WORKSHOP_DIR/
+# PUT API call to create backup snapshot
+curl -XPUT 'http://localhost:9200/_snapshot/analytics_backup' -d '{"type" : "fs","settings" : {"location" : "backup", "compress" : "true"}}'
 
-#echo "`tar -zcvf $WORKSHOP_FOLDER.tar.gz $WORKSHOP_FOLDER`"
-#echo "`cp $WORKSHOP_FOLDER.tar.gz ~/Desktop`" 
-#echo "`cp $WORKSHOP_FOLDER.tar.gz /home/$user/Desktop`" 
+# PUT API call to store backup
+curl -XPUT 'http://localhost:9200/_snapshot/analytics_backup/'$DATE -d '{"ignore_unavailable" : true, "include_globale_state" : false}}'
+
+
+
 
