@@ -7,19 +7,172 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate design. 
+  This document will illustrate design of analytics database.
+  
+* About Elasticsearch
 
+  - Elasticsearch is a opensource NoSQL database
+  - Elasticsearch is a distributed, RESTful search and analytics engine
+  - Data in this database is stored in the form of a Documents.
+  - Elasticsearch contains an =index= which is similar to Database in RDBMS.
+  - A =type= in elasticseach is similar to a table in RDBMS.
+  - A =document= which are similar to row of a RDBMS.
+  - Then comes to =field= which is similar to column of a mysql table
+  - Elasticsearch works on RESTful APIs. API for GET, POST, PUT and DELETE are used.
+  - For every request made to elasticsearch API, an ACK is returned as a response or else the expected output.
+
+* Terminology
+
+   + Index ::
+              An index is like a table in a relational database. It has a
+              mapping which defines the fields in the index, which are grouped
+              by multiple type.
+   + Type ::
+             A type represents the type of document, e.g. an email, a user, or
+             a tweet. The search API can filter documents by type.  An index
+             can contain multiple types, and each type has a list of fields
+             that can be specified for documents of that type.  Fields with the
+             same name in different types in the same index must have the same
+             mapping (which defines how each field in the document is indexed
+             and made searchable).
+   + Document ::
+                 A document is a JSON document which is stored in elasticsearch.  It is a
+                 row in a table in a relational database. Each document is
+                 stored in an index and has a type and an id.  A document is a
+                 JSON object (also known in other languages as a hash / hashmap
+                 / associative array) which contains zero or more fields, or
+                 key-value pairs.  The original JSON document that is indexed
+                 will be stored in the =_source= field, which is returned by
+                 default when getting or searching for a document.
+   + ID ::
+           The ID of a document identifies a document. The =index/type/id= of a
+           document must be unique. If no ID is provided, then it will be
+           auto-generated.
+   + Mapping ::
+                A mapping is like a schema definition in a relational database. 
+                Each index has a mapping, which defines each type within the index, plus
+                a number of index-wide settings. A mapping can either be defined
+                explicitly, or it will be generated automatically when a document is
+                indexed.
 
 * Design
-  + ELK is used as a data store and is independent of the service
-    willing to write into it.
-  + ELK is running behind an nginx proxy server and hence all sorts of
-    authentication, authorization, limting checks, security checks are
-    applied in the nginx configuration.
-  + ELK as a service is to be available to authenticated and
-    authorized users/services. Each application must create its index
-    and document.
-  + A simple diagram showing a flow of how a service and ELK service
-    will interact.
+** To store the feedback records of online labs.
+    - index ::
+               vlabs
+    - type ::
+              feedback
+    - id :: 
+            dd-mm-yyyy (to identify feedback records by date)
+    - document ::
+#+BEGIN_EXAMPLE
+[
+  {
+    "user_id": "Null",
+    "responses": [
+      {
+        "question": {
+          "name": "Please rate your experience",
+          "question_type": "radio",
+          "id": "24"
+        },
+        "answers": [
+          {
+            "name": "4/10",
+            "id": "9"
+          }
+        ],
+        "id": "27"
+      },
+      {
+        "question": {
+          "name": "Designation",
+          "question_type": "radio",
+          "id": "22"
+        },
+        "answers": [
+          {
+            "name": "Student",
+            "id": "1"
+          }
+        ],
+        "id": "1"
+      },
+      {
+        "question": {
+          "name": "Did you attempt any experiments ?",
+          "question_type": "radio",
+          "id": "23"
+        },
+        "answers": [
+          {
+            "name": "No",
+            "id": "2"
+          }
+        ],
+        "id": "10"
+      },
+      {
+        "question": {
+          "name": "Please provide any other feedback about Virtual Labs",
+          "question_type": "textarea",
+          "id": "21"
+        },
+        "answers": [
+          {
+            "name": "",
+            "id": "6"
+          }
+        ],
+        "id": "12"
+      }
+    ],
+    "exp_name": "Null",
+    "lab_name": "generic feedback",
+    "version": "generic-feedback-v2.0",
+    "gateway_ip": "10.100.1.7",
+    "date": "20-10-2016",
+    "id": "7"
+  }
+]
+#+END_EXAMPLE
+            
+** To store the usage analytics of labs running on openedx platform
 
-    Open edX ----POST---> Analytics Server ---POST----> Elasticsearch <---------Fetch Analytics and draw graphs----- Kibana Dashboard 
+    - index ::
+               vlabs
+    - type ::
+              openedx-usage
+    - document ::
+#+BEGIN_EXAMPLE
+{
+    "LAB_ID": "CSE01",
+    "DATE_OF_EXPERIMENT": "2016-10-19",
+    "STUDENT_ID": "student",
+    "REGION": "Telangana",
+    "LAB_NAME": "Data Structures",
+    "EXPERIMENT_NAME": "Graph Traversals",
+    "EXPERIMENT_ID": "E99774",
+    "TIME_OF_EXPERIMENT": "11:06",
+    "IP_ADDRESS": "14.139.82.6"
+}
+#+END_EXAMPLE
+** To store the usage analytics of labs running on non-openedx platform      
+
+    - index ::
+               vlabs
+    - type ::
+              nonopenedx-usage
+    - document ::
+#+BEGIN_EXAMPLE
+{
+    "LAB_ID": "CCNSB04",
+    "LAB_NAME" : "Quantum Chemistry",
+    "INSTITUTE" : "IIIT-H",
+    "HITS" : 200,
+    "VISITS" : 400,
+    "USAGE " : 500
+}
+#+END_EXAMPLE
+
+
+** 

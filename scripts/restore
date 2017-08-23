@@ -1,2 +1,3 @@
-# POST API call to restore backup
-curl -XPOST 'http://localhost:9200/_snapshot/analytics_backup/name_backup/_restore'
+# POST API call to restore backup                                                                   
+DATE=2017-08-22-17:30:20
+curl -XPOST 'http://localhost:9200/_snapshot/analytics_backup/'"$DATE"'/_restore'

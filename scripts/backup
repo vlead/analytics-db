@@ -1,20 +1,21 @@
 ############# backup directory #############3333
 #path to directory where all elastic backup is stored
 BACKUP_DIR=/home/backups
-DATE=`date +%Y-%m-%d`
+DATE=`date +%Y-%m-%d-%T`
+VERSION=v1.0.0
 mkdir $BACKUP_DIR
 
 # Assign ownership permision to $BACKUP_DIR for elasticsearch user
-chown -R elasticsearch:elasticsearch /home/backups
+chown -R elasticsearch:elasticsearch $BACKUP_DIR
 
 # Setup path.repo path to $BACKUP_DIR for elasticsearch to indentify where backup should be stored
-echo 'path.repo : /home/backups' >> /etc/elasticsearch/elasticsearch.yml
+echo 'path.repo : $BACKUP_DIR' >> /etc/elasticsearch/elasticsearch.yml
 
 # Install curl to make API calls to elasticsearch
 apt-get install curl -y
 
 # PUT API call to create backup snapshot
-curl -XPUT 'http://localhost:9200/_snapshot/analytics_backup' -d '{"type" : "fs","settings" : {"location" : "backup", "compress" : "true"}}'
+curl -XPUT 'http://localhost:9200/_snapshot/analytics_backup' -d '{"type" : "fs","settings" : {"location" : "'$VERSION'", "compress" : "true"}}'
 
 # PUT API call to store backup
 curl -XPUT 'http://localhost:9200/_snapshot/analytics_backup/'$DATE -d '{"ignore_unavailable" : true, "include_globale_state" : false}}'
