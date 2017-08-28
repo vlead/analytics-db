@@ -21,15 +21,17 @@
 
 * About Elasticsearch
 
-  - Elasticsearch is a opensource NoSQL database
-  - Elasticsearch is a distributed, RESTful search and analytics engine
-  - Data in this database is stored in the form of a Documents.
-  - Elasticsearch contains an =index= which is similar to Database in RDBMS.
-  - A =type= in elasticseach is similar to a table in RDBMS.
-  - A =document= which are similar to row of a RDBMS.
-  - Then comes to =field= which is similar to column of a mysql table
-  - Elasticsearch works on RESTful APIs. API for GET, POST, PUT and DELETE are used.
-  - For every request made to elasticsearch API, an ACK is returned as a response or else the expected output.
+  1. Elasticsearch is a distributed, RESTful search and analytics engine
+  2. Elasticsearch is a opensource NoSQL database
+  3. Data in this database is stored in the form of a Documents.
+  4. Elasticsearch contains an =index= which is similar to Database in RDBMS.
+  5. A =document= which are similar to row of a RDBMS.
+  6. A =type= in elasticseach is similar to a table in RDBMS.
+  7. Then comes to =field= which is similar to column of a mysql table
+  8. Elasticsearch works on RESTful APIs. API for GET, POST, PUT and DELETE are
+     used.
+  9. For every request made to elasticsearch API, an ACK is returned as a
+     response or else the expected output.
 
 * Terminology
 
@@ -66,7 +68,13 @@
                 indexed.
 
 * Model design
+
 ** To store the feedback analytics of online labs.
+     :PROPERTIES:
+     :CUSTOM_ID: feedback-online
+     :END: 
+     
+
     - index ::
                vlabs
     - type ::
@@ -151,7 +159,11 @@
       #+BEGIN_EXAMPLE
       http://localhost/vlabs/feedbacks/id=yyyy-mm-dd
       #+END_EXAMPLE
+
 ** To store the usage analytics of labs running on openedx platform
+     :PROPERTIES:
+     :CUSTOM_ID: openedx-usage
+     :END: 
 
     - index ::
                vlabs
@@ -178,6 +190,9 @@
       http://localhost/vlabs/nonopenedx-usage
       #+END_EXAMPLE
 ** To store the usage analytics of labs running on non-openedx platform      
+     :PROPERTIES:
+     :CUSTOM_ID: non-openedx-usage
+     :END: 
    
     - index ::
                vlabs
@@ -202,6 +217,9 @@
       #+END_EXAMPLE
 
 ** To store the details of college running college cloud platform
+     :PROPERTIES:
+     :CUSTOM_ID: college-cloud
+     :END: 
    
     - index ::
                college_cloud
@@ -217,7 +235,10 @@
       #+END_EXAMPLE
 
 ** To store the feedback analytics of labs running on college cloud platform
-   
+     :PROPERTIES:
+     :CUSTOM_ID: college-cloud-feedback
+     :END: 
+
     - index ::
                college_cloud
     - type ::
@@ -305,7 +326,9 @@
       #+END_EXAMPLE
 
 ** To store the usage analytics of labs running on college cloud platform   
-   openedx platform
+     :PROPERTIES:
+     :CUSTOM_ID: college-cloud-usage
+     :END: 
 
     - index ::
                college_cloud
