@@ -1,13 +1,13 @@
-#+TITLE: Configuring  the Nginx server
+#+TITLE: Requirements of Analytics Service
 #+AUTHOR: VLEAD
-#+DATE: [2016-06-07 Tue]
+#+DATE: [2017-08-28 Mon]
 #+SETUPFILE: ../org-templates/level-1.org
 #+TAGS: boilerplate(b)
 #+EXCLUDE_TAGS: boilerplate
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate the requirements of ELK server
+  This document will illustrate the requirements of analytics service
 
 * Requirements
   Following are the requirements -

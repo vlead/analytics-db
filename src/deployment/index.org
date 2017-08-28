@@ -1,4 +1,4 @@
-#+TITLE: Configuring  the Nginx server
+#+TITLE: Configuring Elasticsearch Service
 #+AUTHOR: VLEAD
 #+DATE: [2016-06-07 Tue]
 #+SETUPFILE: ../org-templates/level-1.org
@@ -7,33 +7,442 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate the configuration requrired for Nginx 
-  to run ELK server. 
+  This document will illustrate the configuration required for Nginx to run
+  elasticsearch service on port =80= on development environment using =vagrant=
+  
+
+* Steps to run =elasticsearch= service behind =nginx= on port =80=
+- [[https://github.com/vlead/vlead-templates/blob/develop/vagrant-boxes/export-vagrant-box.org#steps-to-create-vm-using-vagrant][Create VM]] using vagrant 
+- Update VM
+#+BEGIN_EXAMPLE
+sudo apt-get update -y
+#+END_EXAMPLE
+- Install the software-properties-common Package
+#+BEGIN_EXAMPLE
+sudo apt-get install software-properties-common python-software-properties -y
+#+END_EXAMPLE
+- To install =java8=, run
+#+BEGIN_EXAMPLE
+sudo apt-add-repository ppa:webupd8team/java -y
+sudo apt-get update -y
+echo 'oracle-java8-installer shared/accepted-oracle-license-v1-1 select true' | sudo debconf-set-selections
+sudo apt-get install oracle-java8-installer -y
+#+END_EXAMPLE
+- Install elasticsearch =v1.7.2=
+#+BEGIN_EXAMPLE
+wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.2.deb && dpkg -i elasticsearch-1.7.2.deb
+#+END_EXAMPLE
+
+- Start Elasticsearch
+#+BEGIN_EXAMPLE
+sudo service elasticsearch start
+#+END_EXAMPLE
+- Install nginx web server
+#+BEGIN_EXAMPLE
+sudo apt-get install nginx -y
+#+END_EXAMPLE
+- Start nginx
+#+BEGIN_EXAMPLE
+sudo service nginx start
+#+END_EXAMPLE
+- Routing the requests through nginx
+  + First lets disable Elasticsearch from receiving external requests. In the
+    elasticsearch server, open the file /etc/elasticsearch/elasticsearch.yml
+    for editting. Comment out the config network.bind_host and
+    network.publish_host.
+#+BEGIN_EXAMPLE
+#network.bind_host: #some_value
+#network.publish_host: #some_other_value 
+network.host: localhost
+#+END_EXAMPLE
+- Check by restarting service
+#+BEGIN_EXAMPLE
+sudo service elasticsearch restart
+#+END_EXAMPLE
+- Run elasticsearch behind nginx
+  + To accomplish that, we need to create a file
+    /etc/nginx/sites-available/elasticsearch with the following content.
+#+BEGIN_EXAMPLE
+server {
+    listen 80;
+    server_name localhost;
+    location / {
+    limit_except GET {
+      auth_basic           "Login required";
+      auth_basic_user_file /etc/nginx/.htpasswd;
+    } 
+        rewrite ^/(.*) /$1 break;
+        proxy_ignore_client_abort on;
+        proxy_pass http://localhost:9200;
+        proxy_redirect http://localhost:9200 http://localhost/;
+        proxy_set_header  X-Real-IP  $remote_addr;
+        proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header  Host $http_host;
+    }
+}
+
+#+END_EXAMPLE
+- Setup credentials
+#+BEGIN_EXAMPLE
+htpasswd -c /etc/nginx/.htpasswd username
+#+END_EXAMPLE
+- Create symbolic link to nginx virtual conf file =elasticsearch=
+#+BEGIN_EXAMPLE
+sudo ln /etc/nginx/sites-available/elasticsearch /etc/nginx/sites-enabled/
+#+END_EXAMPLE
+- Remove =default= file from =nginx=
+#+BEGIN_EXAMPLE
+rm /etc/nginx/sites-enabled/default
+#+END_EXAMPLE
+- Reload & restart nginx
+#+BEGIN_EXAMPLE
+sudo service nginx reload
+sudo service nginx restart
+#+END_EXAMPLE
+- Run =nginx= and =elasticsearch= on boot time
+#+BEGIN_EXAMPLE
+sudo update-rc.d nginx defaults
+sudo update-rc.d elasticsearch defaults
+#+END_EXAMPLE
+- Access elasticsearch on browser
+#+BEGIN_EXAMPLE
+firefox http://localhost
+#+END_EXAMPLE
 
 
-* Install all dependencies and setup the software
-  Configure the Nginx with specific configuration for elasticsearch 
+* Important commands for dealing with Elasticsearch database.
+  
+** Start/Stop/Check status of elasticsearch service
+   - Generic command : service elasticsearch <start/stop/restart/status>
+   #+BEGIN_EXAMPLE
+   service elasticsearch start
+   #+END_EXAMPLE
 
-#+BEGIN_SRC sh :tangle setup.sh :eval no
-#!/bin/bash
-# Shell script to install deb package dependencies as well as python package
-# dependencies for dataservice.
 
-# if any proxy server
-#PROXY=""
-# file to store the generated password
+** Create an index in elasticsearch 
+   - An index can be created using Elasticsearch API
+   - Invoke API using curl command or by using python-elasticsearch client.
+   - Generic command  : curl -XPOST "http://<host-name>:<port-number>/<index-name>"
+    #+BEGIN_EXAMPLE
+    root@vlabs-analytics:~# curl -XPOST "http://localhost:9200/test-index"
+    #+END_EXAMPLE
+   - If index is successfully created you get a True ACK from elasticsearch
+     server.
+    #+BEGIN_EXAMPLE
+    {"acknowledged":true}
+    #+END_EXAMPLE
 
-if [[ `id -u` -ne 0 ]]; then
-  echo "You have to execute this script as super user!"
-  exit 1;
-fi
 
-echo "host:0.0.0.0" >> /etc/elasticsearch/elasticsearch.yml
-echo "port:9200" >> /etc/elasticsearch/elasticsearch.yml
+** Insert a record in elasticsearch database 
+   - Generic command : curl -XPOST "http://http://<hostname>:<port-number>/<index-name>/<doc-type>/[id-of-record]" -d 
+                        {
+                         "key1" : "value1",
+                         "KeyN" : "valueN"
+                        }'
+     #+BEGIN_EXAMPLE
+     root@vlabs-analytics:~# curl -XPOST "http://localhost:9200/test-index/document-test/" -d '{"name":"Sripathi", "age":"23"}'
+     #+END_EXAMPLE
+   - If record is sucessfull inserted you get a ACK as shown An ID for each
+     record is dynamically generated, if it is not mentioned while inserting
+     data.
+    #+BEGIN_SRC command
+    {
+    "_index":"test-index",
+    "_type":"document-test",
+    "_id":"AViVv6dqvXkOVLf8Bz4E",
+    "_version":1,
+    "_shards":{"total":2,"successful":1,"failed":0},
+    "created":true
+    }
+    #+END_SRC
 
-sudo cp /root/ovpl/elk-stack-for-analytics/scripts/elasticsearch-nginx.conf /etc/nginx/sites-enabled/default
 
-#+END_SRC
+** Check the status of elasticsearch using curl command
+   - Generic command : curl http://<hostname>:<port-number> 
+
+    #+BEGIN_EXAMPLE
+    root@vlabs-analytics:~# curl http://localhost:9200/
+    #+END_EXAMPLE
+   - Above comand gives version information, cluster build time, cluster name
+     of elastisearch. See given output is given below -
+
+    #+BEGIN_EXAMPLE
+    {
+      "name" : "Janus",
+      "cluster_name" : "elasticsearch",
+      "cluster_uuid" : "aUdpyb8BR3ieeLEj3q5Z7Q",
+      "version" : {
+        "number" : "2.4.1",
+        "build_hash" : "c67dc32e24162035d18d6fe1e952c4cbcbe79d16",
+        "build_timestamp" : "2016-09-27T18:57:55Z",
+        "build_snapshot" : false,
+        "lucene_version" : "5.5.2"
+      },
+      "tagline" : "You Know, for Search"
+    }
+
+    #+END_EXAMPLE
+
+
+** List the existing indexes in elasticsearch database 
+   - Generic command : curl http://<hostname>:<port-number>/_cat/indices?v
+    #+BEGIN_EXAMPLE command
+    root@vlabs-analytics:~# curl http://localhost:9200/_cat/indices?v
+    #+END_EXAMPLE
+   - Output for above command is
+
+    #+BEGIN_EXAMPLE
+    health status index   pri rep docs.count docs.deleted store.size pri.store.size 
+    yellow open   .kibana   1   1          1            0      3.1kb          3.1kb 
+    yellow open   vlabs     5   1          0            0       795b           795b
+    #+END_EXAMPLE
+
+
+** Fetch records from index
+   - To obtain data from elasticsearch use the command as shown
+    #+BEGIN_EXAMPLE
+    root@vlabs-analytics:~# curl -XGET "http://<hostname>:<port-number>/<index-name>/_search?pretty&size=<No-of-records>"
+    root@vlabs-analytics:~# curl -XGET "http://localhost:9200/vlabs/_search?pretty&size=2"
+    #+END_EXAMPLE
+    Output obtained as given below -
+    #+BEGIN_EXAMPLE
+    {
+      "took" : 1,
+      "timed_out" : false,
+      "_shards" : {
+        "total" : 5,
+        "successful" : 5,
+        "failed" : 0
+      },
+      "hits" : {
+        "total" : 2671,
+        "max_score" : 1.0,
+        "hits" : [ {
+          "_index" : "vlabs",
+          "_type" : "usage",
+          "_id" : "AVee00ocYbJBYuvGUfjp",
+          "_score" : 1.0,
+          "_source" : {
+            "LAB_ID" : "EEE06",
+            "DATE_OF_EXPERIMENT" : "2016-10-07",
+            "STUDENT_ID" : "student",
+            "REGION" : "Telangana",
+            "LAB_NAME" : "Virtual Power Lab",
+            "EXPERIMENT_NAME" : "To Study the over-current relay and the effect of PSM and TSM",
+            "EXPERIMENT_ID" : "E99850",
+            "TIME_OF_EXPERIMENT" : "11:07",
+            "IP_ADDRESS" : "14.139.82.6"
+          }
+        }, {
+          "_index" : "vlabs",
+          "_type" : "usage",
+          "_id" : "AVeew8TSYbJBYuvGUfjP",
+          "_score" : 1.0,
+          "_source" : {
+            "LAB_ID" : "CHEM01",
+            "DATE_OF_EXPERIMENT" : "2016-10-07",
+            "STUDENT_ID" : "student",
+            "REGION" : "Telangana",
+            "LAB_NAME" : "Chemical Engineering Lab",
+            "EXPERIMENT_NAME" : "Flow measurement by orificemeter and venturimeter",
+            "EXPERIMENT_ID" : "E99656",
+            "TIME_OF_EXPERIMENT" : "10:50",
+            "IP_ADDRESS" : "14.139.82.6"
+          }
+        } ]
+      }
+    }
+
+    #+END_EXAMPLE
+
+
+** Delete an index in elasticsearch 
+   - Deleting an index will delete all documents under that index.  To DELETE
+     an index, use the following command -
+
+    #+BEGIN_EXAMPLE
+    General Syntax # curl -XDELETE "http://<hostname>:<port-number>/<index-name>"
+    root@vlabs-analytics:~# curl -XDELETE "http://localhost:9200/test-index"
+    #+END_EXAMPLE
+   - Once deleted, an ACK is given as shown below -
+     #+BEGIN_EXAMPLE command
+     {"acknowledged":true}
+     #+END_EXAMPLE
+
+
+* Configuring string analyzer for Elasticsearch 
+  - Elasticsearch has default settings to analyze a string. For example
+    see the example document given below -
+    #+BEGIN_EXAMPLE
+    {
+    "name" : "Sripathi Kammari",
+    "age" : "23" 
+    }
+    #+END_EXAMPLE
+
+  - When visualizations are generated in kibana, you see different graphs for
+    "Sripathi" and "Kammari" even though it is a single value assigned to
+    "name" key.
+
+  - To Override this default behavior, custom settings are done while creating
+    an index.  To disable default string analyzer use the general syntax and
+    example as shown -
+
+    #+BEGIN_EXAMPLE
+
+    curl -XPUT http://<hostname>:<port-number>/<index-name> -d '{
+        "index" : {
+            "analysis" : {
+                "analyzer" : {
+                    "default" : {
+                        "type" : "keyword"
+                    }
+                }
+            }
+        }
+    }'
+    #+END_EXAMPLE
+  - The above command will create an index which does not exist and overrite
+    the settings to disable analyzer.
+
+  - A example using the above command is -
+    #+BEGIN_SRC command
+    curl -XPUT localhost:9200/test-index -d '{
+        "index" : {
+            "analysis" : {
+                "analyzer" : {
+                    "default" : {
+                        "type" : "keyword"
+                    }
+                }
+            }
+        }
+    }'
+    #+END_SRC
+
+
+* Query DSL for elasticsearch 
+** Fetch records matching the specific string from a field
+   - Given below is the syntax to serach for a specific string in a specific
+     field.
+
+
+   #+BEGIN_EXAMPLE
+   GET /<index-name>/<doc-type>/_search?pretty&size=<no-of-records>
+   {
+   "query" : {
+                        "term" : { 
+                    "<Field-name>" : "<field value to search for>"
+                }
+            }
+        }
+   #+END_EXAMPLE
+   Example run is given below -  
+   #+BEGIN_EXAMPLE
+  GET /vlabs/usage/_search?pretty&size=50
+   {
+    "query" : {
+       "term" : { 
+                    "REGION" : "Telangana"
+                }
+            }
+        }
+    
+   #+END_EXAMPLE
+   Hence a search based on the string value of a filed in record is done 
+   using =term= keyword of Elasticsearch Query DSL
+
+** To fetch analytics for a specific date 
+   Use the below query-
+   
+   #+BEGIN_EXAMPLE
+   GET /vlabs/usage/_search?pretty&size=50
+   {   
+       "query" : {
+       "term" : { 
+              "DATE_OF_EXPERIMENT" : "2016-10-07"
+               }
+             }
+   }
+   #+END_EXAMPLE
+   Returns all the records added having date mentioned.
+   Sample output is given below for 3 records 
+
+    #+BEGIN_EXAMPLE
+    {
+    "took": 7,
+    "timed_out": false,
+    "_shards": {
+      "total": 5,
+      "successful": 5,
+      "failed": 0
+    },
+    "hits": {
+      "total": 87,
+      "max_score": 4.942464,
+      "hits": [
+        {
+          "_index": "vlabs",
+          "_type": "usage",
+          "_id": "AVefLTSmYbJBYuvGUfkx",
+          "_score": 4.942464,
+          "_source": {
+            "LAB_ID": "MECH48",
+            "DATE_OF_EXPERIMENT": "2016-10-07",
+            "STUDENT_ID": "student",
+            "REGION": "Telangana",
+            "LAB_NAME": "Virtual Combustion and Atomization Laboratory",
+            "EXPERIMENT_NAME": "Numerical characterization of laminar premixed methane-air flames",
+            "EXPERIMENT_ID": "E99433",
+            "TIME_OF_EXPERIMENT": "12:46",
+            "IP_ADDRESS": "14.139.82.6"
+          }
+        },
+        {
+          "_index": "vlabs",
+          "_type": "usage",
+          "_id": "AVee7i6hYbJBYuvGUfkA",
+          "_score": 4.942464,
+          "_source": {
+            "LAB_ID": "ECE40",
+            "DATE_OF_EXPERIMENT": "2016-10-07",
+            "STUDENT_ID": "student",
+            "REGION": "Telangana",
+            "LAB_NAME": "Electronic Devices and Circuits",
+            "EXPERIMENT_NAME": "I-V Characteristics and Fabrication of p-n junction Diode",
+            "EXPERIMENT_ID": "E99646",
+            "TIME_OF_EXPERIMENT": "11:37",
+            "IP_ADDRESS": "14.139.82.6"
+          }
+        },
+        {
+          "_index": "vlabs",
+          "_type": "usage",
+          "_id": "AVefEWpPYbJBYuvGUfkh",
+          "_score": 4.942464,
+          "_source": {
+            "LAB_ID": "BIOTECH25",
+            "DATE_OF_EXPERIMENT": "2016-10-07",
+            "STUDENT_ID": "student",
+            "REGION": "Telangana",
+            "LAB_NAME": "Virtual Proteomics Laboratory",
+            "EXPERIMENT_NAME": "In-gel digestion of proteins for MS analysis",
+            "EXPERIMENT_ID": "E99613",
+            "TIME_OF_EXPERIMENT": "12:15",
+            "IP_ADDRESS": "14.139.82.6"
+          }
+        }
+      ]
+     }
+    }
+    #+END_EXAMPLE
+
+
+* References
+  + https://www.elastic.co/products/elasticsearch
+  + [[http://www.elasticsearchtutorial.com/elasticsearch-in-5-minutes.html][Elasticsearch in 5 mins]]
+  + [[http://1.droppdf.com/files/FOeNs/elasticsearch-the-definitive-guide-clinton-gormley-zachary-tong.pdf][Elasticsearch Definitive Guide]]
+  + [[https://www.elastic.co/guide/en/elasticsearch/guide/current/analysis-intro.html][Elasticsearch String analyzer]]
 
 
 * Tangle 				     			:boilerplate:

@@ -1,4 +1,4 @@
-#+TITLE: Configuring  the Nginx server
+#+TITLE: Design of Elasticsearch database
 #+AUTHOR: VLEAD
 #+DATE: [2016-06-07 Tue]
 #+SETUPFILE: ../org-templates/level-1.org
@@ -7,8 +7,18 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate design of analytics database.
+  This document will illustrate the design of elasticsearch database for
+  Virtual Labs platform.
   
+* Why Elasticsearch ?
+
+  - Since the user and usage analytics of Virtual Labs platform are in the
+    form of json records choosing =NoSQL= database is good option.
+
+  - Choosing =NoSQL= database such as =elasticsearch= is good for querying all
+    possibilities on json records since =elasticsearch= comes with in built
+    REST interface to perform =CRUD= operations.
+
 * About Elasticsearch
 
   - Elasticsearch is a opensource NoSQL database
@@ -55,87 +65,92 @@
                 explicitly, or it will be generated automatically when a document is
                 indexed.
 
-* Design
-** To store the feedback records of online labs.
+* Model design
+** To store the feedback analytics of online labs.
     - index ::
                vlabs
     - type ::
               feedback
     - id :: 
-            dd-mm-yyyy (to identify feedback records by date)
+            yyyy-mm-dd (to identify feedback records by date)
     - document ::
-#+BEGIN_EXAMPLE
-[
-  {
-    "user_id": "Null",
-    "responses": [
-      {
-        "question": {
-          "name": "Please rate your experience",
-          "question_type": "radio",
-          "id": "24"
-        },
-        "answers": [
-          {
-            "name": "4/10",
-            "id": "9"
-          }
-        ],
-        "id": "27"
-      },
-      {
-        "question": {
-          "name": "Designation",
-          "question_type": "radio",
-          "id": "22"
-        },
-        "answers": [
-          {
-            "name": "Student",
-            "id": "1"
-          }
-        ],
-        "id": "1"
-      },
-      {
-        "question": {
-          "name": "Did you attempt any experiments ?",
-          "question_type": "radio",
-          "id": "23"
-        },
-        "answers": [
-          {
-            "name": "No",
-            "id": "2"
-          }
-        ],
-        "id": "10"
-      },
-      {
-        "question": {
-          "name": "Please provide any other feedback about Virtual Labs",
-          "question_type": "textarea",
-          "id": "21"
-        },
-        "answers": [
-          {
-            "name": "",
-            "id": "6"
-          }
-        ],
-        "id": "12"
-      }
-    ],
-    "exp_name": "Null",
-    "lab_name": "generic feedback",
-    "version": "generic-feedback-v2.0",
-    "gateway_ip": "10.100.1.7",
-    "date": "20-10-2016",
-    "id": "7"
-  }
-]
-#+END_EXAMPLE
-            
+
+       #+BEGIN_EXAMPLE
+       [
+         {
+           "user_id": "Null",
+           "responses": [
+             {
+               "question": {
+                 "name": "Please rate your experience",
+                 "question_type": "radio",
+                 "id": "24"
+               },
+               "answers": [
+                 {
+                   "name": "4/10",
+                   "id": "9"
+                 }
+               ],
+               "id": "27"
+             },
+             {
+               "question": {
+                 "name": "Designation",
+                 "question_type": "radio",
+                 "id": "22"
+               },
+               "answers": [
+                 {
+                   "name": "Student",
+                   "id": "1"
+                 }
+               ],
+               "id": "1"
+             },
+             {
+               "question": {
+                 "name": "Did you attempt any experiments ?",
+                 "question_type": "radio",
+                 "id": "23"
+               },
+               "answers": [
+                 {
+                   "name": "No",
+                   "id": "2"
+                 }
+               ],
+               "id": "10"
+             },
+             {
+               "question": {
+                 "name": "Please provide any other feedback about Virtual Labs",
+                 "question_type": "textarea",
+                 "id": "21"
+               },
+               "answers": [
+                 {
+                   "name": "",
+                   "id": "6"
+                 }
+               ],
+               "id": "12"
+             }
+           ],
+           "exp_name": "Null",
+           "lab_name": "generic feedback",
+           "version": "generic-feedback-v2.0",
+           "gateway_ip": "10.100.1.7",
+           "date": "20-10-2016",
+           "id": "7"
+         }
+       ]
+       #+END_EXAMPLE
+    - Example REST API ::
+
+      #+BEGIN_EXAMPLE
+      http://localhost/vlabs/feedbacks/id=yyyy-mm-dd
+      #+END_EXAMPLE
 ** To store the usage analytics of labs running on openedx platform
 
     - index ::
@@ -143,36 +158,199 @@
     - type ::
               openedx-usage
     - document ::
-#+BEGIN_EXAMPLE
-{
-    "LAB_ID": "CSE01",
-    "DATE_OF_EXPERIMENT": "2016-10-19",
-    "STUDENT_ID": "student",
-    "REGION": "Telangana",
-    "LAB_NAME": "Data Structures",
-    "EXPERIMENT_NAME": "Graph Traversals",
-    "EXPERIMENT_ID": "E99774",
-    "TIME_OF_EXPERIMENT": "11:06",
-    "IP_ADDRESS": "14.139.82.6"
-}
-#+END_EXAMPLE
-** To store the usage analytics of labs running on non-openedx platform      
 
+       #+BEGIN_EXAMPLE
+       {
+           "LAB_ID": "CSE01",
+           "DATE_OF_EXPERIMENT": "2016-10-19",
+           "STUDENT_ID": "student",
+           "REGION": "Telangana",
+           "LAB_NAME": "Data Structures",
+           "EXPERIMENT_NAME": "Graph Traversals",
+           "EXPERIMENT_ID": "E99774",
+           "TIME_OF_EXPERIMENT": "11:06",
+           "IP_ADDRESS": "14.139.82.6"
+       }
+       #+END_EXAMPLE
+    - Example REST API ::
+
+      #+BEGIN_EXAMPLE
+      http://localhost/vlabs/nonopenedx-usage
+      #+END_EXAMPLE
+** To store the usage analytics of labs running on non-openedx platform      
+   
     - index ::
                vlabs
     - type ::
               nonopenedx-usage
     - document ::
-#+BEGIN_EXAMPLE
-{
-    "LAB_ID": "CCNSB04",
-    "LAB_NAME" : "Quantum Chemistry",
-    "INSTITUTE" : "IIIT-H",
-    "HITS" : 200,
-    "VISITS" : 400,
-    "USAGE " : 500
-}
-#+END_EXAMPLE
 
+       #+BEGIN_EXAMPLE
+       {
+           "LAB_ID": "CCNSB04",
+           "LAB_NAME" : "Quantum Chemistry",
+           "INSTITUTE" : "IIIT-H",
+           "HITS" : 200,
+           "VISITS" : 400,
+           "USAGE " : 500
+       }
+       #+END_EXAMPLE
+    - Example REST API ::
 
-** 
+      #+BEGIN_EXAMPLE
+      http://localhost/vlabs/nonopenedx-usage
+      #+END_EXAMPLE
+
+** To store the details of college running college cloud platform
+   
+    - index ::
+               college_cloud
+    - type ::
+              details
+    - id :: 
+            id=<mac_addr>
+
+    - Example REST API ::
+
+      #+BEGIN_EXAMPLE
+      http://localhost/college_cloud/details/id=98:40:bb:46:1d:58
+      #+END_EXAMPLE
+
+** To store the feedback analytics of labs running on college cloud platform
+   
+    - index ::
+               college_cloud
+    - type ::
+              collegename_macaddr_feedbacks
+    - id :: 
+            yyyy-mm-dd (to identify feedback records by date)
+
+    - document ::
+
+       #+BEGIN_EXAMPLE
+       [
+         {
+           "user_id": "Null",
+           "responses": [
+             {
+               "question": {
+                 "name": "Please rate your experience",
+                 "question_type": "radio",
+                 "id": "24"
+               },
+               "answers": [
+                 {
+                   "name": "4/10",
+                   "id": "9"
+                 }
+               ],
+               "id": "27"
+             },
+             {
+               "question": {
+                 "name": "Designation",
+                 "question_type": "radio",
+                 "id": "22"
+               },
+               "answers": [
+                 {
+                   "name": "Student",
+                   "id": "1"
+                 }
+               ],
+               "id": "1"
+             },
+             {
+               "question": {
+                 "name": "Did you attempt any experiments ?",
+                 "question_type": "radio",
+                 "id": "23"
+               },
+               "answers": [
+                 {
+                   "name": "No",
+                   "id": "2"
+                 }
+               ],
+               "id": "10"
+             },
+             {
+               "question": {
+                 "name": "Please provide any other feedback about Virtual Labs",
+                 "question_type": "textarea",
+                 "id": "21"
+               },
+               "answers": [
+                 {
+                   "name": "",
+                   "id": "6"
+                 }
+               ],
+               "id": "12"
+             }
+           ],
+           "exp_name": "Null",
+           "lab_name": "generic feedback",
+           "version": "generic-feedback-v2.0",
+           "gateway_ip": "10.100.1.7",
+           "date": "20-10-2016",
+           "id": "7"
+         }
+       ]
+       #+END_EXAMPLE
+    - Example REST API ::
+
+      #+BEGIN_EXAMPLE
+      http://localhost/college_cloud/jntu_98:40:bb:46:1d:58_feedbakcs
+      #+END_EXAMPLE
+
+** To store the usage analytics of labs running on college cloud platform   
+   openedx platform
+
+    - index ::
+               college_cloud
+    - type ::
+              collegename_macaddr_usage
+    - document ::
+
+       #+BEGIN_EXAMPLE
+       {
+           "LAB_ID": "CSE01",
+           "DATE_OF_EXPERIMENT": "2016-10-19",
+           "STUDENT_ID": "student",
+           "REGION": "Telangana",
+           "LAB_NAME": "Data Structures",
+           "EXPERIMENT_NAME": "Graph Traversals",
+           "EXPERIMENT_ID": "E99774",
+           "TIME_OF_EXPERIMENT": "11:06",
+           "IP_ADDRESS": "14.139.82.6"
+       }
+
+       #+END_EXAMPLE
+    - Example REST API ::
+
+      #+BEGIN_EXAMPLE
+      http://localhost/college_cloud/details/id=98:40:bb:46:1d:58
+      #+END_EXAMPLE
+* Service Interplay
+#+BEGIN_HTML
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vRIaLMh2dyfg_IEOkZneyi3Sv27DVgZDgGQKmuPzTR0fj5Udd0dQDSQE2VVw8hEqTtBVXZVTVhwrngD/pub?w=960&h=720">
+<p align="center"> Services Interplay </p>
+#+END_HTML
+
+- Virtual Labs on AWS :: 
+     
+- Virtual Labs on College Cloud ::
+
+- Feedback ::
+
+- Outreach Portal ::
+
+- Analytics Service ::
+
+- Database ::
+
+* References
+  + [[https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-ubuntu-14-04][Install ELK]]
+  + [[https://www.elastic.co/][Learn ELK]]
+  + [[http://www.webupd8.org/2014/03/how-to-install-oracle-java-8-in-debian.html][Install Java 8]]

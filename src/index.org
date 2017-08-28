@@ -1,40 +1,34 @@
-#+Title: Installing and setting up ELK server 
-#+Date: November 7, 2016
-#+Author: VLEAD Systems 
+#+TITLE: Virtual Labs Analytics Database
+#+AUTHOR: VLEAD
+#+DATE: [2017-08-26 Tue]
+#+SETUPFILE: ./org-templates/level-0.org
+#+TAGS: boilerplate(b)
+#+EXCLUDE_TAGS: boilerplate
+#+OPTIONS: ^:nil
 
-* Introduction 
-  This document mentions the requirements, prerequisites, installation
-  steps and custom configuration used to set up ELK (Elasticsearch
-  Logstash Kibana server).
-
-* Why ELK ?
-  + ELK is a combined solution given by elastic.co to store logs in
-    certain formats and then a visualization tool takes care of
-    visualization of obtained logs in the form of nice graphs. A user
-    can interact with ELK server using web based HTTP(S) API to write,
-    read, update, delete data into elasticsearch NOSQL database.
-  + There was no specific reason to choose NOSQL database, still VLABS
-    analaytics being in the form of document results choosing
-    elasticsearch as a good choice.
-  + The Kibana visualization tool needs minimal intervention to
-    produce graphs from the records/data stored in elasticsearch
-    database.
-  + As a result of this, ELK provides a complete package to satisfy
-    the requirements with minimal efforts.
-
+* Version/Branch History
   
+* Application
 
-+ [[./requirements/index.org][Requirements]]
+  The purpose of configuring NoSQL database application (elasticsearch) is to
+  facilitate the storage of user and usage analytics of virtual labs platform
+  and other in the form of json records and thereby to provide APIs for related
+  queries on json data
 
-+ [[./design/index.org][Design]]
 
-+ [[./deployment/index.org][Deployment]]
+* Introduction
+  This document describes the requirements, design and deployement of
+  elasticsearch.
 
-* Restore elasticsearch 
-  http://stackoverflow.com/questions/25144034/how-to-copy-some-elasticsearch-data-to-a-new-index  
 
-* References
-  + [[https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-ubuntu-14-04][Install ELK]]
-  + [[https://www.elastic.co/][Learn ELK]]
-  + [[http://www.webupd8.org/2014/03/how-to-install-oracle-java-8-in-debian.html][Install Java 8]]
-  
+1. [[./requirements/index.org][Requirements]]
+
+2. [[./design/index.org][Design]]
+
+3. [[./deployment/index.org][Deployment]]
+
+
+* Tangle                                       :boilerplate:
+#+BEGIN_SRC python :eval no :tangle __init__.py
+print "analytics package"
+#+END_SRC
