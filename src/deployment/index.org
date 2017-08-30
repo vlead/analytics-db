@@ -111,62 +111,108 @@ firefox http://localhost
 
 
 * Script to migrate to the elasticsearch database
-  1. Following script is takes the dump of all existing json records of
-     elasticsearch database and store them into the file and names them as
-     =indexname_typename.json=
-  2. Also it migrates all the elasticsearch dump data into new elasticsearch
-     database as per [[https://github.com/vlead/analytics-db/blob/refactor/src/design/index.org#design-of-elasticsearch-database][desing]]
-  3. This script uses =LDS= to make the records consistent before store into
-     elasticsearch database.
 
-
-#+BEGIN_SRC python :tangle migrate_elastic_db.py :eval no
-import requests
-import json
+  1. Script takes the backup of all existing =indexes= and store them into the
+     =.json= file with naming convention as =index_type.json=
+  2. Also it migrates the dump of above =step1= data into new elasticsearch
+     database as per new [[https://github.com/vlead/analytics-db/blob/refactor/src/design/index.org#design-of-elasticsearch-database][design]]
+  3. This script uses [[http://lds.vlabs.ac.in][LDS]] service to make the records consistent before storing
+     into database.
+** Function to backup the elasticsearch database
+   Function takes the backup of all existing =indexes= and store them into the
+   =.json= file with naming convention as =index_type.json=
+#+NAME: backup
+#+BEGIN_SRC python
 
 ELASTIC_DB_URL = "http://192.168.33.10"
 LDS_URL = "http://lds.vlabs.ac.in"
 file_names = []
+count = 0
+headers = {'Content-Type': 'application/json'}
 
 def backup():
 
     GET_INDEXS_API = "%s/_cat/indices" % (ELASTIC_DB_URL)
-    headers = {'Content-Type': 'application/json'}
-    r = requests.get(GET_INDEXS_API, headers=headers)
-    indexes = r.json()
-    #indexes = ['vlabs' , 'college_cloud' , 'matrusri-college_70:54:d2:7b:3d:70', 'juit_70:54:d2:7b:3d:36']
+    try:
+        r = requests.get(GET_INDEXS_API, headers=headers)
+        if r.status_code == 200 or r.status_code == 201:
+            indexes = r.json()
+        else:
+            print "Failed to get index lists"
+            
+    except Exception as e:
+        print str(e)
 
     for index in indexes:
         index_name = index['index']
         GET_TYPES_API = "%s/%s" % (ELASTIC_URL, index_name)
-        r = requests.get(GET_TYPES_API)
-        types = r.json()[index_name]['mappings'].keys()
-        for t in types:
-            temp = []
-            GET_DOCS_API = "%s/%s/%s/_search" % (ELASTIC_URL, index_name, str(t))
-            r = requests.get(GET_DOCS_API)
-            docs = r.json()['hits']['hits']
-            for doc in docs:
-                temp.append(doc['_source'])
-            file_name = "%s_%s.json" % (index_name, str(t))
-            file_names.append(file_name)
-            f = open(file_name, 'w')
-            json.dump(temp, f)
-            f.close()
 
+        try:
+            r = requests.get(GET_TYPES_API)
+            if r.status_code == 200 or r.status_code == 201:
+                types = r.json()[index_name]['mappings'].keys()
+                for type in types:
+                    temp = []
+                    GET_DOCS_API = "%s/%s/%s/_search?size=10000" %(ELASTIC_URL, index_name, str(type))
+                    r = requests.get(GET_DOCS_API)
+                    if r.status_code == 200 or r.status_code == 201:
+                        docs = r.json()['hits']['hits']
+                        for doc in docs:
+                            temp.append(doc['_source'])
+                        file_name = "%s_%s.json" % (index_name, str(t))
+                        file_names.append(file_name)
+                        try:
+                            f = open(file_name, 'w')
+                            json.dump(temp, f)
+                            f.close()
+                        except Exception as e:
+                            print str(e)
+                    else:
+                        print "failed to get types data"
+            else:
+                print "Failed to get types list"
+
+        except Exception as e:
+            print str(e)
+#+END_SRC
+** Migrate json records
+   This functions restores the =json= records into specified =index= and =type=
+#+NAME: migrate_json_records
+#+BEGIN_SRC python
+            
 def migrate_json_records(records, index, type):
+
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
-    headers = {'Content-Type': 'application/json'}
+
     for record in records:
         if 'mac_addr' in record:
             ELASTIC_DB_API = "%s/%s/%s/%s" % (ELASTIC_DB_URL, index, type, record['mac_addr'])
-        r = requests.post(ELASTIC_DB_API, data=json.dumps(record), headers=headers)
-        if r.status_code == 200 or r.status_code == 201:
-            print "added record %s" % (record)
-        else:
-            print "failed to add record %s" % (record)
+
+        try:
+            r = requests.post(ELASTIC_DB_API, data=json.dumps(record), headers=headers)
+            if r.status_code == 200 or r.status_code == 201:
+                count = count + 1
+                print "************************************"
+                print ELASTIC_DB_API
+                print "Added record %s/%s" % (count, len(records))
+                print "added record %s" % (record)
+                print "************************************"
+            else:
+                print "failed to add record %s" % (record)
+
+        except Exception as e:
+            print str(e)
+#+END_SRC
+
+** Migrate usage
+   This function migrates the usage records into specified =index= and =type=
+   also it contacts =LDS= to make the usage records consistent such as
+   =lab-name= and =exp-name=.
+#+NAME: migrate_usage
+#+BEGIN_SRC python
 
 def migrate_usage(usages, index, type):
+
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
     usage_dict = {}
     for usage in usages:
@@ -174,75 +220,139 @@ def migrate_usage(usages, index, type):
         usage_dict['date_of_experiment'] = usage['DATE_OF_EXPERIMENT']
         usage_dict['student_id'] = usage['STUDENT_ID']
         usage_dict['region'] = usage['REGION']
-        LDS_API = "%s/labs?lab_id" % (LDS_URL, usage_dict['lab_id'])
-        r = requests.get(LDS_API, headers=headers)
-        if r.status_code == 200:
-            usage_dict['lab_name'] = r.json()['lab_name']
-        else:
-            usage_dict['lab_name'] = usage['LAB_NAME']
+        LDS_API = "%s/labs?lab_id=%s" % (LDS_URL, usage_dict['lab_id'])
+
+        try:
+            r = requests.get(LDS_API, headers=headers)
+            if r.status_code == 200:
+                usage_dict['lab_name'] = r.json()['lab_name']
+            else:
+                usage_dict['lab_name'] = usage['LAB_NAME']
+
+        except Exception as e:
+            print str(e)
+            
         usage_dict['experiment_id'] = usage['EXPERIMENT_ID'].lower()
-        LDS_API = "%s/experiments?exp_id" % (LDS_URL, usage_dict['experiment_id'])
-        r = requests.get(LDS_API, headers=headers)
-        if r.status_code == 200:
-            usage_dict['experiment_name'] = r.json()['exp_name']
-        else:
-            usage_dict['experiment_name'] = usage['EXPERIMENT_NAME']
+        LDS_API = "%s/experiments?exp_id=%s" % (LDS_URL, usage_dict['experiment_id'])
+
+        try:
+            r = requests.get(LDS_API, headers=headers)
+            if r.status_code == 200:
+                usage_dict['experiment_name'] = r.json()['exp_name']
+            else:
+                usage_dict['experiment_name'] = usage['EXPERIMENT_NAME']
+        except Exception as e:
+            print str(e)
+
         usage_dict['time_of_experiment'] = usage['TIME_OF_EXPERIMENT']
         usage_dict['ip_address'] = usage['IP_ADDRESS']
 
-        r = requests.post(ELASTIC_DB_API, data=json.dumps(usage_dict), headers=headers)
-        if r.status_code == 200 or r.status_code == 201:
-            print "added usage record %s" % (usage)
-        else:
-            print "failed to add usage record %s" % (usage)
+        try:
+            r = requests.post(ELASTIC_DB_API, data=json.dumps(usage_dict), headers=headers)
+            if r.status_code == 200 or r.status_code == 201:
+                count = count + 1
+                print "************************************"
+                print ELASTIC_DB_API
+                print "Added record %s/%s" % (count, len(usages))
+                print "added usage record %s" % (usage_dict)
+                print "************************************"            
+
+            else:
+                print "failed to add usage record %s" % (usage_dict)
+
+        except Exception as e:
+            print str(e)
+#+END_SRC
+
+** Migrate db
+   This function reads all =.json= files which are obtained in backup step and
+   invokes necessary functions to restore them into elasticsearch database.
+#+NAME: migrate_db
+#+BEGIN_SRC python
 
 def migrate():
-    headers = {'Content-Type': 'application/json'}
+
     for file_name in file_names:
         if file_name == "vlabs_usage.json":
             index = "vlabs"
             type = "openedx_usage"
-            with open(file_name) as data_file:
-                usages = json.load(data_file)
-            migrate_usage(usages, index, type)    
+
+            try:
+                with open(file_name) as data_file:
+                    usages = json.load(data_file)
+                migrate_usage(usages, index, type)
+
+            except Exception as e:
+                print str(e)
 
         if file_name == "college_cloud_details.json":
             index = "college_cloud"
-            type = "details"            
-            with open(file_name) as data_file:
-                cc_details = json.load(data_file)
-            migrate_json_records(cc_details, index, type)
+            type = "details"
 
+            try:
+                with open(file_name) as data_file:
+                    cc_details = json.load(data_file)
+                migrate_json_records(cc_details, index, type)
+
+            except Exception as e:
+                print str(e)
+                
         if file_name == "matrusri-college_70:54:d2:7b:3d:70_usages.json":
             index = "college_cloud"
             type = "matrusri-college_70:54:d2:7b:3d:70_usage"
-            with open(file_name) as data_file:
-                cc_usages = json.load(data_file)
-            migrate_usage(cc_usages, index, type)
 
+            try:
+                with open(file_name) as data_file:
+                    cc_usages = json.load(data_file)
+                migrate_usage(cc_usages, index, type)
+
+            except Exception as e:
+                print str(e)
+                
         if file_name == "matrusri-college_70:54:d2:7b:3d:70_feedback.json":
             index = "college_cloud"
             type = "matrusri-college_70:54:d2:7b:3d:70_feedback"
-            with open(file_name) as data_file:
-                feedbacks = json.load(data_file)
-            migrate_json_records(feedbacks, index, type)
 
-        if file_name == "juit_70:54:d2:7b:3d:36_feedback.json";
+            try:
+                with open(file_name) as data_file:
+                    feedbacks = json.load(data_file)
+                migrate_json_records(feedbacks, index, type)
+
+            except Exception as e:
+                print str(e)
+                
+        if file_name == "juit_70:54:d2:7b:3d:36_feedback.json":
             index = "college_cloud"
             type = "juit_70:54:d2:7b:3d:36_feedback"
             ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
-            with open(file_name) as data_file:
-                feedbacks = json.load(data_file)
-            migrate_json_records(feedbacks, index, type)
 
+            try:
+                with open(file_name) as data_file:
+                    feedbacks = json.load(data_file)
+                migrate_json_records(feedbacks, index, type)
+
+            except Exception as e:
+                print str(e)
         if file_name == "juit_70:54:d2:7b:3d:36_usages.json":
             index = "college_cloud"
             type = "juit_70:54:d2:7b:3d:36_usage"
-            with open(file_name) as data_file:
-                cc_usages = json.load(data_file)
-            migrate_usage(cc_usages, index, type)
-backup()
-#migrate()
+
+            try:
+                with open(file_name) as data_file:
+                    cc_usages = json.load(data_file)
+                migrate_usage(cc_usages, index, type)
+
+            except Exception as e:
+                print str(e)
+
+#+END_SRC
+** main function
+   This function invokes =backup()= or =migrate()= functions.
+#+NAME: main
+#+BEGIN_SRC python
+if __name__== "__main__":
+    backup()
+    #migrate()
 
 #+END_SRC
   
@@ -581,7 +691,22 @@ backup()
   + [[https://www.elastic.co/guide/en/elasticsearch/guide/current/analysis-intro.html][Elasticsearch String analyzer]]
 
 
-* Tangle 				     			:boilerplate:
-#+BEGIN_SRC python :eval no :tangle __init__.py
-print "deployment package"
+* Tangle                                                        :boilerplate:
+*** Imports 
+
+#+NAME: imports
+#+BEGIN_SRC python
+import requests
+import json
+#+END_SRC
+
+*** Sources
+#+BEGIN_SRC python :tangle migrate_elastic_db.py :eval no :noweb yes
+
+<<imports>>
+<<backup>>
+<<migrate_usage>>
+<<migrate_json_records>>
+<<migrate_db>>
+<<main>>
 #+END_SRC
