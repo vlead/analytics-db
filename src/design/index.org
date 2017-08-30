@@ -1,4 +1,4 @@
-#+TITLE: Design of Elasticsearch database
+#+TITLE: Design of Elasticsearch database for Virtual Labs
 #+AUTHOR: VLEAD
 #+DATE: [2016-06-07 Tue]
 #+SETUPFILE: ../org-templates/level-1.org
@@ -7,8 +7,9 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate the design of elasticsearch database for
-  Virtual Labs platform.
+  This document will illustrate the design of analytics database for Virtual
+  Labs platform. Virtual Labs is using =elasticsearch= as =NoSQL= database for
+  storing analytics related data.
   
 * Why Elasticsearch ?
 
@@ -78,7 +79,7 @@
     - index ::
                vlabs
     - type ::
-              feedback
+              feedbacks
     - id :: 
             yyyy-mm-dd (to identify feedback records by date)
     - document ::
@@ -160,7 +161,7 @@
       http://localhost/vlabs/feedbacks/id=yyyy-mm-dd
       #+END_EXAMPLE
 
-** To store the usage analytics of labs running on openedx platform
+** To store the usage analytics of labs running on openedx aplatform
      :PROPERTIES:
      :CUSTOM_ID: openedx-usage
      :END: 
@@ -173,21 +174,21 @@
 
        #+BEGIN_EXAMPLE
        {
-           "LAB_ID": "CSE01",
-           "DATE_OF_EXPERIMENT": "2016-10-19",
-           "STUDENT_ID": "student",
-           "REGION": "Telangana",
-           "LAB_NAME": "Data Structures",
-           "EXPERIMENT_NAME": "Graph Traversals",
-           "EXPERIMENT_ID": "E99774",
-           "TIME_OF_EXPERIMENT": "11:06",
-           "IP_ADDRESS": "14.139.82.6"
+           "lab_id": "cse01",
+           "date_of_experiment": "2016-10-19",
+           "student_id": "student",
+           "region": "Telangana",
+           "lab_name": "Data Structures",
+           "experiment_name": "Graph Traversals",
+           "experiment_id": "E99774",
+           "time_of_experiment": "11:06",
+           "ip_address": "14.139.82.6"
        }
        #+END_EXAMPLE
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
-      http://localhost/vlabs/nonopenedx-usage
+      http://localhost/vlabs/openedx-usage
       #+END_EXAMPLE
 ** To store the usage analytics of labs running on non-openedx platform      
      :PROPERTIES:
@@ -198,6 +199,9 @@
                vlabs
     - type ::
               nonopenedx-usage
+    - id :: 
+            yyyy-mm-dd (to identify usage analytics by date)
+
     - document ::
 
        #+BEGIN_EXAMPLE
@@ -213,7 +217,7 @@
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
-      http://localhost/vlabs/nonopenedx-usage
+      http://localhost/vlabs/nonopenedx-usage?id=yyyy-mm-dd
       #+END_EXAMPLE
 
 ** To store the details of college running college cloud platform
@@ -355,6 +359,59 @@
       #+BEGIN_EXAMPLE
       http://localhost/college_cloud/details/id=98:40:bb:46:1d:58
       #+END_EXAMPLE
+** To store the user analytics of openedx
+     :PROPERTIES:
+     :CUSTOM_ID: college-cloud-usage
+     :END: 
+
+    - index ::
+               vlabs
+    - type ::
+              user_analytics
+    - id :: 
+            yyyy-mm-dd (to identify user analytics by date)
+
+    - document ::
+
+       #+BEGIN_EXAMPLE
+       {
+         "current_logged_in_users" : 20,
+         "total_registered_users" : 100
+       }
+
+       #+END_EXAMPLE
+    - Example REST API ::
+
+      #+BEGIN_EXAMPLE
+      http://localhost/vlabs/user_analytics/id=yyyy-mm-dd
+      #+END_EXAMPLE
+** To store the user analytics of outreach portal
+     :PROPERTIES:
+     :CUSTOM_ID: college-cloud-usage
+     :END: 
+
+    - index ::
+               outreach
+    - type ::
+              user_analytics
+    - id :: 
+            yyyy-mm-dd (to identify user analytics by date)
+
+    - document ::
+
+       #+BEGIN_EXAMPLE
+       {
+         "current_logged_in_users" : 20,
+         "total_registered_users" : 100
+       }
+
+       #+END_EXAMPLE
+    - Example REST API ::
+
+      #+BEGIN_EXAMPLE
+      http://localhost/outreach/user_analytics/id=yyyy-mm-dd
+      #+END_EXAMPLE
+
 * Service Interplay
 #+BEGIN_HTML
 <img src="https://docs.google.com/drawings/d/e/2PACX-1vRIaLMh2dyfg_IEOkZneyi3Sv27DVgZDgGQKmuPzTR0fj5Udd0dQDSQE2VVw8hEqTtBVXZVTVhwrngD/pub?w=960&h=720">
@@ -362,7 +419,10 @@
 #+END_HTML
 
 - Virtual Labs on AWS :: 
-     
+  + Total number of labs running on AWS :: 173
+    - Total number of labs running on Openedx platform :: 90
+    - Total number of labs running on Non openedx platform :: 83
+
 - Virtual Labs on College Cloud ::
 
 - Feedback ::
@@ -377,3 +437,5 @@
   + [[https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-ubuntu-14-04][Install ELK]]
   + [[https://www.elastic.co/][Learn ELK]]
   + [[http://www.webupd8.org/2014/03/how-to-install-oracle-java-8-in-debian.html][Install Java 8]]
+
+
