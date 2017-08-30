@@ -145,7 +145,7 @@ def backup():
 
     for index in indexes:
         index_name = index['index']
-        GET_TYPES_API = "%s/%s" % (ELASTIC_URL, index_name)
+        GET_TYPES_API = "%s/%s" % (ELASTIC_DB_URL, index_name)
 
         try:
             r = requests.get(GET_TYPES_API)
@@ -153,13 +153,13 @@ def backup():
                 types = r.json()[index_name]['mappings'].keys()
                 for type in types:
                     temp = []
-                    GET_DOCS_API = "%s/%s/%s/_search?size=10000" %(ELASTIC_URL, index_name, str(type))
+                    GET_DOCS_API = "%s/%s/%s/_search?size=10000" %(ELASTIC_DB_URL, index_name, str(type))
                     r = requests.get(GET_DOCS_API)
                     if r.status_code == 200 or r.status_code == 201:
                         docs = r.json()['hits']['hits']
                         for doc in docs:
                             temp.append(doc['_source'])
-                        file_name = "%s_%s.json" % (index_name, str(t))
+                        file_name = "%s_%s.json" % (index_name, str(type))
                         file_names.append(file_name)
                         try:
                             f = open(file_name, 'w')
@@ -356,6 +356,7 @@ if __name__== "__main__":
 
 #+END_SRC
   
+
 * Important commands for dealing with Elasticsearch database.
   
 ** Start/Stop/Check status of elasticsearch service
