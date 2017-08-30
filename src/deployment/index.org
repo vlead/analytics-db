@@ -110,6 +110,142 @@ firefox http://localhost
 #+END_EXAMPLE
 
 
+* Script to migrate to the elasticsearch database
+  1. Following script is takes the dump of all existing json records of
+     elasticsearch database and store them into the file and names them as
+     =indexname_typename.json=
+  2. Also it migrates all the elasticsearch dump data into new elasticsearch
+     database as per [[https://github.com/vlead/analytics-db/blob/refactor/src/design/index.org#design-of-elasticsearch-database][desing]]
+  3. This script uses =LDS= to make the records consistent before store into
+     elasticsearch database.
+
+
+#+BEGIN_SRC python :tangle migrate_elastic_db.py :eval no
+import requests
+import json
+
+ELASTIC_DB_URL = "http://192.168.33.10"
+LDS_URL = "http://lds.vlabs.ac.in"
+file_names = []
+
+def backup():
+
+    GET_INDEXS_API = "%s/_cat/indices" % (ELASTIC_DB_URL)
+    headers = {'Content-Type': 'application/json'}
+    r = requests.get(GET_INDEXS_API, headers=headers)
+    indexes = r.json()
+    #indexes = ['vlabs' , 'college_cloud' , 'matrusri-college_70:54:d2:7b:3d:70', 'juit_70:54:d2:7b:3d:36']
+
+    for index in indexes:
+        index_name = index['index']
+        GET_TYPES_API = "%s/%s" % (ELASTIC_URL, index_name)
+        r = requests.get(GET_TYPES_API)
+        types = r.json()[index_name]['mappings'].keys()
+        for t in types:
+            temp = []
+            GET_DOCS_API = "%s/%s/%s/_search" % (ELASTIC_URL, index_name, str(t))
+            r = requests.get(GET_DOCS_API)
+            docs = r.json()['hits']['hits']
+            for doc in docs:
+                temp.append(doc['_source'])
+            file_name = "%s_%s.json" % (index_name, str(t))
+            file_names.append(file_name)
+            f = open(file_name, 'w')
+            json.dump(temp, f)
+            f.close()
+
+def migrate_json_records(records, index, type):
+    ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
+    headers = {'Content-Type': 'application/json'}
+    for record in records:
+        if 'mac_addr' in record:
+            ELASTIC_DB_API = "%s/%s/%s/%s" % (ELASTIC_DB_URL, index, type, record['mac_addr'])
+        r = requests.post(ELASTIC_DB_API, data=json.dumps(record), headers=headers)
+        if r.status_code == 200 or r.status_code == 201:
+            print "added record %s" % (record)
+        else:
+            print "failed to add record %s" % (record)
+
+def migrate_usage(usages, index, type):
+    ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
+    usage_dict = {}
+    for usage in usages:
+        usage_dict['lab_id'] = usage['LAB_ID'].lower()
+        usage_dict['date_of_experiment'] = usage['DATE_OF_EXPERIMENT']
+        usage_dict['student_id'] = usage['STUDENT_ID']
+        usage_dict['region'] = usage['REGION']
+        LDS_API = "%s/labs?lab_id" % (LDS_URL, usage_dict['lab_id'])
+        r = requests.get(LDS_API, headers=headers)
+        if r.status_code == 200:
+            usage_dict['lab_name'] = r.json()['lab_name']
+        else:
+            usage_dict['lab_name'] = usage['LAB_NAME']
+        usage_dict['experiment_id'] = usage['EXPERIMENT_ID'].lower()
+        LDS_API = "%s/experiments?exp_id" % (LDS_URL, usage_dict['experiment_id'])
+        r = requests.get(LDS_API, headers=headers)
+        if r.status_code == 200:
+            usage_dict['experiment_name'] = r.json()['exp_name']
+        else:
+            usage_dict['experiment_name'] = usage['EXPERIMENT_NAME']
+        usage_dict['time_of_experiment'] = usage['TIME_OF_EXPERIMENT']
+        usage_dict['ip_address'] = usage['IP_ADDRESS']
+
+        r = requests.post(ELASTIC_DB_API, data=json.dumps(usage_dict), headers=headers)
+        if r.status_code == 200 or r.status_code == 201:
+            print "added usage record %s" % (usage)
+        else:
+            print "failed to add usage record %s" % (usage)
+
+def migrate():
+    headers = {'Content-Type': 'application/json'}
+    for file_name in file_names:
+        if file_name == "vlabs_usage.json":
+            index = "vlabs"
+            type = "openedx_usage"
+            with open(file_name) as data_file:
+                usages = json.load(data_file)
+            migrate_usage(usages, index, type)    
+
+        if file_name == "college_cloud_details.json":
+            index = "college_cloud"
+            type = "details"            
+            with open(file_name) as data_file:
+                cc_details = json.load(data_file)
+            migrate_json_records(cc_details, index, type)
+
+        if file_name == "matrusri-college_70:54:d2:7b:3d:70_usages.json":
+            index = "college_cloud"
+            type = "matrusri-college_70:54:d2:7b:3d:70_usage"
+            with open(file_name) as data_file:
+                cc_usages = json.load(data_file)
+            migrate_usage(cc_usages, index, type)
+
+        if file_name == "matrusri-college_70:54:d2:7b:3d:70_feedback.json":
+            index = "college_cloud"
+            type = "matrusri-college_70:54:d2:7b:3d:70_feedback"
+            with open(file_name) as data_file:
+                feedbacks = json.load(data_file)
+            migrate_json_records(feedbacks, index, type)
+
+        if file_name == "juit_70:54:d2:7b:3d:36_feedback.json";
+            index = "college_cloud"
+            type = "juit_70:54:d2:7b:3d:36_feedback"
+            ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
+            with open(file_name) as data_file:
+                feedbacks = json.load(data_file)
+            migrate_json_records(feedbacks, index, type)
+
+        if file_name == "juit_70:54:d2:7b:3d:36_usages.json":
+            index = "college_cloud"
+            type = "juit_70:54:d2:7b:3d:36_usage"
+            with open(file_name) as data_file:
+                cc_usages = json.load(data_file)
+            migrate_usage(cc_usages, index, type)
+backup()
+#migrate()
+
+#+END_SRC
+  
 * Important commands for dealing with Elasticsearch database.
   
 ** Start/Stop/Check status of elasticsearch service
@@ -269,7 +405,7 @@ firefox http://localhost
      {"acknowledged":true}
      #+END_EXAMPLE
 
-
+     
 * Configuring string analyzer for Elasticsearch 
   - Elasticsearch has default settings to analyze a string. For example
     see the example document given below -
