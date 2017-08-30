@@ -110,7 +110,7 @@ firefox http://localhost
 #+END_EXAMPLE
 
 
-* Script to migrate to the elasticsearch database
+* Script to migrate the elasticsearch database
 
   1. Script takes the backup of all existing =indexes= and store them into the
      =.json= file with naming convention as =index_type.json=
