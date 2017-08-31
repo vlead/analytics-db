@@ -130,15 +130,14 @@ ELASTIC_DB_URL = "http://192.168.33.10"
 LDS_URL = "http://lds.vlabs.ac.in"
 file_names = []
 
-headers = {'Content-Type': 'application/json'}
 
 def backup():
-
+    headers = {'Content-Type': 'application/json'}
     GET_INDEXS_API = "%s/_cat/indices" % (ELASTIC_DB_URL)
 
     try:
         r = requests.get(GET_INDEXS_API, headers=headers)
-        if r.status_code == 200 or r.status_code == 201:
+        if r.status_code == 200:
             indexes = r.json()
         else:
             print "Failed to get index lists"
@@ -152,7 +151,7 @@ def backup():
 
         try:
             r = requests.get(GET_TYPES_API)
-            if r.status_code == 200 or r.status_code == 201:
+            if r.status_code == 200:
                 types = r.json()[index_name]['mappings'].keys()
                 for type in types:
                     temp = []
@@ -162,12 +161,8 @@ def backup():
                         start_date = date(2016, 10, 07)
                         end_date = date(2017, 8, 31)
                         for dt in rrule(DAILY, dtstart=start_date, until=end_date):
-                            date = dt.strftime("%Y-%mm-%dd")
-                            GET_DOCS_API = "%s/%s/%s/_search?q=DATE_OF_EXPERIMENT:%s" %(ELASTIC_DB_URL, index_name, str(type), date)
-                            print "*************"
-                            print GET_DOCS_API
-                            print "*************"
-                            
+                            t_date = dt.strftime("%Y-%m-%d")
+                            GET_DOCS_API = "%s/%s/%s/_search?q=DATE_OF_EXPERIMENT:%s&size=10000" %(ELASTIC_DB_URL, index_name, str(type), t_date)
                             r = requests.get(GET_DOCS_API)
                             if r.status_code == 200:
                                 docs = r.json()['hits']['hits']
@@ -176,7 +171,7 @@ def backup():
                     else:
                         GET_DOCS_API = "%s/%s/%s/_search?size=10000" %(ELASTIC_DB_URL, index_name, str(type))
                         r = requests.get(GET_DOCS_API)
-                        if r.status_code == 200 or r.status_code == 201:
+                        if r.status_code == 200:
                             docs = r.json()['hits']['hits']
                             for doc in docs:
                                 temp.append(doc['_source'])
@@ -201,21 +196,21 @@ def backup():
 #+BEGIN_SRC python
             
 def migrate_json_records(records, index, type):
+   
     count = 0
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
-
+    headers = {'Content-Type': 'application/json'}
     for record in records:
         if 'mac_addr' in record:
             ELASTIC_DB_API = "%s/%s/%s/%s" % (ELASTIC_DB_URL, index, type, record['mac_addr'])
 
         try:
             r = requests.post(ELASTIC_DB_API, data=json.dumps(record), headers=headers)
-            if r.status_code == 200 or r.status_code == 201:
+            if r.status_code == 201:
                 count = count + 1
                 print "************************************"
                 print ELASTIC_DB_API
                 print "Added record %s/%s" % (count, len(records))
-                print "added record %s" % (record)
                 print "************************************"
             else:
                 print "failed to add record %s" % (record)
@@ -236,6 +231,7 @@ def migrate_usage(usages, index, type):
     count = 0
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
     usage_dict = {}
+    headers = {'Content-Type': 'application/json'}
     for usage in usages:
         usage_dict['lab_id'] = usage['LAB_ID'].lower()
         usage_dict['date_of_experiment'] = usage['DATE_OF_EXPERIMENT']
@@ -270,12 +266,11 @@ def migrate_usage(usages, index, type):
 
         try:
             r = requests.post(ELASTIC_DB_API, data=json.dumps(usage_dict), headers=headers)
-            if r.status_code == 200 or r.status_code == 201:
+            if r.status_code == 201:
                 count = count + 1
                 print "************************************"
                 print ELASTIC_DB_API
                 print "Added record %s/%s" % (count, len(usages))
-                print "added usage record %s" % (usage_dict)
                 print "************************************"            
 
             else:
