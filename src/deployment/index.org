@@ -190,13 +190,38 @@ def backup():
         except Exception as e:
             print str(e)
 #+END_SRC
+** Configure string analyzer
+#+NAME: config_string_analyzer
+#+BEGIN_SRC python
+            
+def config_string_analyzer(index):
+    ANALYTICS_API = "%s/%s" % (ANALYTICS_URL, index)
+    data = {
+        "index" : {
+            "analysis" : {
+                "analyzer" : {
+                    "default" : {
+                        "type" : "keyword"
+                        }
+                    }
+                }
+            }
+        }
+    r = requests.put(ANALYTICS_API, data=json.dumps(data), headers=headers)
+    if r.status_code == 200:
+        return True
+    else:
+        return False
+   
+
+#+END_SRC
 ** Migrate json records
    This functions restores the =json= records into specified =index= and =type=
 #+NAME: migrate_json_records
 #+BEGIN_SRC python
             
 def migrate_json_records(records, index, type):
-   
+    config_string_analyzer(index)
     count = 0
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
     headers = {'Content-Type': 'application/json'}
@@ -228,6 +253,7 @@ def migrate_json_records(records, index, type):
 #+BEGIN_SRC python
 
 def migrate_usage(usages, index, type):
+    config_string_analyzer(index)
     count = 0
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
     usage_dict = {}
@@ -243,6 +269,8 @@ def migrate_usage(usages, index, type):
             r = requests.get(LDS_API, headers=headers)
             if r.status_code == 200:
                 usage_dict['lab_name'] = r.json()['lab_name']
+                usage_dict['discipline_name'] = r.json()['discipline']['discipline_name']
+                usage_dict['institute_name'] = r.json()['institute']['institute_name']
             else:
                 usage_dict['lab_name'] = usage['LAB_NAME']
 
@@ -725,6 +753,7 @@ from dateutil.rrule import rrule, DAILY
 
 <<imports>>
 <<backup>>
+<<config_string_analyzer>>
 <<migrate_usage>>
 <<migrate_json_records>>
 <<migrate_db>>
