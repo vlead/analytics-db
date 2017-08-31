@@ -119,20 +119,23 @@ firefox http://localhost
   3. This script uses [[http://lds.vlabs.ac.in][LDS]] service to make the records consistent before storing
      into database.
 ** Function to backup the elasticsearch database
-   Function takes the backup of all existing =indexes= and store them into the
-   =.json= file with naming convention as =index_type.json=
+   - Function takes the backup of all existing =indexes= and store them into
+     the =.json= file with naming convention as =index_type.json=
+   - This script will backup the openedx usage analytics from =2016-10-07= to
+     till date
 #+NAME: backup
 #+BEGIN_SRC python
 
 ELASTIC_DB_URL = "http://192.168.33.10"
 LDS_URL = "http://lds.vlabs.ac.in"
 file_names = []
-count = 0
+
 headers = {'Content-Type': 'application/json'}
 
 def backup():
 
     GET_INDEXS_API = "%s/_cat/indices" % (ELASTIC_DB_URL)
+
     try:
         r = requests.get(GET_INDEXS_API, headers=headers)
         if r.status_code == 200 or r.status_code == 201:
@@ -153,22 +156,39 @@ def backup():
                 types = r.json()[index_name]['mappings'].keys()
                 for type in types:
                     temp = []
-                    GET_DOCS_API = "%s/%s/%s/_search?size=10000" %(ELASTIC_DB_URL, index_name, str(type))
-                    r = requests.get(GET_DOCS_API)
-                    if r.status_code == 200 or r.status_code == 201:
-                        docs = r.json()['hits']['hits']
-                        for doc in docs:
-                            temp.append(doc['_source'])
-                        file_name = "%s_%s.json" % (index_name, str(type))
-                        file_names.append(file_name)
-                        try:
-                            f = open(file_name, 'w')
-                            json.dump(temp, f)
-                            f.close()
-                        except Exception as e:
-                            print str(e)
+
+                    if index_name == "vlabs" and type == "usage":
+                        
+                        start_date = date(2016, 10, 07)
+                        end_date = date(2017, 8, 31)
+                        for dt in rrule(DAILY, dtstart=start_date, until=end_date):
+                            date = dt.strftime("%Y-%mm-%dd")
+                            GET_DOCS_API = "%s/%s/%s/_search?q=DATE_OF_EXPERIMENT:%s" %(ELASTIC_DB_URL, index_name, str(type), date)
+                            print "*************"
+                            print GET_DOCS_API
+                            print "*************"
+                            
+                            r = requests.get(GET_DOCS_API)
+                            if r.status_code == 200:
+                                docs = r.json()['hits']['hits']
+                                for doc in docs:
+                                    temp.append(doc['_source'])
                     else:
-                        print "failed to get types data"
+                        GET_DOCS_API = "%s/%s/%s/_search?size=10000" %(ELASTIC_DB_URL, index_name, str(type))
+                        r = requests.get(GET_DOCS_API)
+                        if r.status_code == 200 or r.status_code == 201:
+                            docs = r.json()['hits']['hits']
+                            for doc in docs:
+                                temp.append(doc['_source'])
+                    file_name = "%s_%s.json" % (index_name, str(type))
+                    file_names.append(file_name)
+                    try:
+                        f = open(file_name, 'w')
+                        json.dump(temp, f)
+                        f.close()
+                    except Exception as e:
+                        print str(e)
+
             else:
                 print "Failed to get types list"
 
@@ -181,7 +201,7 @@ def backup():
 #+BEGIN_SRC python
             
 def migrate_json_records(records, index, type):
-
+    count = 0
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
 
     for record in records:
@@ -205,14 +225,15 @@ def migrate_json_records(records, index, type):
 #+END_SRC
 
 ** Migrate usage
-   This function migrates the usage records into specified =index= and =type=
-   also it contacts =LDS= to make the usage records consistent such as
-   =lab-name= and =exp-name=.
+   - This function migrates the usage records into specified =index= and =type=
+     also it contacts =LDS= to make the usage records consistent such as
+     =lab-name= and =exp-name=.
+   - This script will migrate the openedx usage analytics from =2016-10-07= to till date
 #+NAME: migrate_usage
 #+BEGIN_SRC python
 
 def migrate_usage(usages, index, type):
-
+    count = 0
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
     usage_dict = {}
     for usage in usages:
@@ -699,6 +720,9 @@ if __name__== "__main__":
 #+BEGIN_SRC python
 import requests
 import json
+from datetime import datetime, timedelta, date
+from dateutil.rrule import rrule, DAILY
+
 #+END_SRC
 
 *** Sources
