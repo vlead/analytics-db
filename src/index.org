@@ -12,8 +12,8 @@
 
   The purpose of configuring NoSQL database application (elasticsearch) is to
   facilitate the storage of user and usage analytics of virtual labs platform
-  and other in the form of json records and thereby to provide APIs for related
-  queries on json data
+  and other information in the form of json records and thereby to provide APIs
+  for related queries on json data
 
 
 * Introduction
@@ -27,7 +27,7 @@
 
 3. [[./deployment/index.org][Deployment]]
 
-
+   
 * Tangle                                       :boilerplate:
 #+BEGIN_SRC python :eval no :tangle __init__.py
 print "analytics package"

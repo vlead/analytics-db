@@ -169,7 +169,7 @@
     - index ::
                vlabs
     - type ::
-              openedx-usage
+              openedx_usage
     - document ::
 
        #+BEGIN_EXAMPLE
@@ -188,7 +188,7 @@
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
-      http://localhost/vlabs/openedx-usage
+      http://localhost/vlabs/openedx_usage
       #+END_EXAMPLE
 ** To store the usage analytics of labs running on non-openedx platform      
      :PROPERTIES:
@@ -230,12 +230,12 @@
     - type ::
               details
     - id :: 
-            id=<mac_addr>
+            <mac_addr>
 
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
-      http://localhost/college_cloud/details/id=98:40:bb:46:1d:58
+      http://localhost/college_cloud/details/98:40:bb:46:1d:58
       #+END_EXAMPLE
 
 ** To store the feedback analytics of labs running on college cloud platform
@@ -246,7 +246,7 @@
     - index ::
                college_cloud
     - type ::
-              collegename_macaddr_feedbacks
+              collegename_macaddr_feedback
     - id :: 
             yyyy-mm-dd (to identify feedback records by date)
 
@@ -342,22 +342,22 @@
 
        #+BEGIN_EXAMPLE
        {
-           "LAB_ID": "CSE01",
-           "DATE_OF_EXPERIMENT": "2016-10-19",
-           "STUDENT_ID": "student",
-           "REGION": "Telangana",
-           "LAB_NAME": "Data Structures",
-           "EXPERIMENT_NAME": "Graph Traversals",
-           "EXPERIMENT_ID": "E99774",
-           "TIME_OF_EXPERIMENT": "11:06",
-           "IP_ADDRESS": "14.139.82.6"
+           "lab_id": "cse01",
+           "date_of_experiment": "2016-10-19",
+           "student_id": "student",
+           "region": "Telangana",
+           "lab_name": "Data Structures",
+           "experiment_name": "Graph Traversals",
+           "experiment_id": "E99774",
+           "time_of_experiment": "11:06",
+           "ip_address": "14.139.82.6"
        }
 
        #+END_EXAMPLE
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
-      http://localhost/college_cloud/details/id=98:40:bb:46:1d:58
+      http://localhost/college_cloud/details/98:40:bb:46:1d:58
       #+END_EXAMPLE
 ** To store the user analytics of openedx
      :PROPERTIES:
