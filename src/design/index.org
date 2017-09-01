@@ -27,7 +27,7 @@
       - Provides =REST APIs= to perform advanced level search/retrieve queries
         using =json= as a payload
 
-* More about Elasticsearch
+* More about Elasticsearch database
 
   1. Elasticsearch is a distributed and RESTful search and analytics engine.
   2. Elasticsearch is a opensource NoSQL database.
@@ -75,7 +75,7 @@
                 indexed.
 
 * Model design
-
+  Following are the various scenarios for which database model is defined
 ** To store the feedback analytics of labs running on Openedx platform.
      :PROPERTIES:
      :CUSTOM_ID: feedback-openedx
@@ -451,6 +451,12 @@
       http://localhost/vlabs/outreach_user_analytics/2017-08-20
       #+END_EXAMPLE
 
+* Security
+  Security for =elasticsearch= database service is provided at upstream server
+  level (i.e nginx)
+  1. By default =elasticsearch= service runs on port =9200=
+  2. To makte elasticsearch GET APIs available to the public we setup the upstream
+     server 
 * References
   + [[https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-ubuntu-14-04][Install ELK]]
   + [[https://www.elastic.co/][Learn ELK]]
