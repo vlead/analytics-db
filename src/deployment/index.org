@@ -1,4 +1,4 @@
-#+TITLE: Configuring Elasticsearch Service
+#+TITLE: Configuring Analytics Database Service
 #+AUTHOR: VLEAD
 #+DATE: [2016-06-07 Tue]
 #+SETUPFILE: ../org-templates/level-1.org
@@ -7,21 +7,23 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate the configuration required for Nginx to run
-  elasticsearch service on port =80= on development environment using =vagrant=
-  
+  This document will illustrate the following
+  1. Steps to run and configure the analytics database service (i.e
+     elasticsearch) on development environment.
+  2. Script to backup/restore =elasticsearch= database
+  3. Important sample APIs to deal with the =elasticsearch=
 
-* Steps to run =elasticsearch= service behind =nginx= on port =80=
-- [[https://github.com/vlead/vlead-templates/blob/develop/vagrant-boxes/export-vagrant-box.org#steps-to-create-vm-using-vagrant][Create VM]] using vagrant 
-- Update VM
+* Steps to run =elasticsearch= database service behind =nginx= on development environment
+- [[https://github.com/vlead/vlead-templates/blob/develop/vagrant-boxes/export-vagrant-box.org#steps-to-create-vm-using-vagrant][Create Machine]] using vagrant 
+- Update machine
 #+BEGIN_EXAMPLE
 sudo apt-get update -y
 #+END_EXAMPLE
-- Install the software-properties-common Package
+- Install the =software-properties-common= Package
 #+BEGIN_EXAMPLE
 sudo apt-get install software-properties-common python-software-properties -y
 #+END_EXAMPLE
-- To install =java8=, run
+- Install =java v8=
 #+BEGIN_EXAMPLE
 sudo apt-add-repository ppa:webupd8team/java -y
 sudo apt-get update -y
@@ -109,27 +111,70 @@ sudo update-rc.d elasticsearch defaults
 firefox http://localhost
 #+END_EXAMPLE
 
-
-* Script to migrate the elasticsearch database
-
-  1. Script takes the backup of all existing =indexes= and store them into the
-     =.json= file with naming convention as =index_type.json=
-  2. Also it migrates the dump of above =step1= data into new elasticsearch
-     database as per new [[https://github.com/vlead/analytics-db/blob/refactor/src/design/index.org#design-of-elasticsearch-database][design]]
-  3. This script uses [[http://lds.vlabs.ac.in][LDS]] service to make the records consistent before storing
-     into database.
-** Function to backup the elasticsearch database
-   - Function takes the backup of all existing =indexes= and store them into
+* Script to migrate the elasticsearch database 
+  
+  1. This script takes the backup of all existing =indexes= in version [[https://github.com/vlead/analytics-db/releases/tag/v1.0.0][v1.0.0]]
+  2. During backup each =index= and its associated =types= data is stored into
      the =.json= file with naming convention as =index_type.json=
-   - This script will backup the openedx usage analytics from =2016-10-07= to
-     till date
+  3. This script also restores the data which is obtained in step(1) as per new
+     elasticsearch database [[https://github.com/vlead/analytics-db/blob/refactor/src/design/index.org#design-of-elasticsearch-database][design]].
+  4. During the restore process script contact [[http://lds.vlabs.ac.in][LDS]] service to make all the
+     field values such as =lab_name=, =exp_name= ..etc in consistent with =LDS=
+     service data
+
+** Disable string analyzer
+  - Elasticsearch has default settings to analyze a string.  For example see
+    the example document given below
+    #+BEGIN_EXAMPLE
+    {
+    "name" : "Sripathi Kammari",
+    "age" : "23" 
+    }
+    #+END_EXAMPLE
+
+  - When search queries executed, you see different values for "Sripathi" and
+    "Kammari" even though it is a single value assigned to "name" key.
+
+  - To Override this default behavior, custom settings are done while before
+    creating an index.
+
+#+NAME: config_string_analyzer
+#+BEGIN_SRC python
+            
+def config_string_analyzer(index):
+    headers = {'Content-Type': 'application/json'}
+    ELASTIC_DB_API = "%s/%s" % (ELASTIC_DB_URL, index)
+    data = {
+        "index" : {
+            "analysis" : {
+                "analyzer" : {
+                    "default" : {
+                        "type" : "keyword"
+                        }
+                    }
+                }
+            }
+        }
+    r = requests.put(ELASTIC_DB_API, data=json.dumps(data), headers=headers)
+    if r.status_code == 200:
+        return True
+    else:
+        return False
+   
+
+#+END_SRC
+** Function to backup the elasticsearch database
+   - This script takes the backup of all existing =indexes= in version [[https://github.com/vlead/analytics-db/releases/tag/v1.0.0][v1.0.0]]
+   - During backup each =index= and its associated =types= data is stored into
+     the =.json= file with naming convention as =index_type.json=
+   - This script will backup the usage analytics from =2016-10-07= to till date
+
 #+NAME: backup
 #+BEGIN_SRC python
 
 ELASTIC_DB_URL = "http://192.168.33.10"
 LDS_URL = "http://lds.vlabs.ac.in"
 file_names = []
-
 
 def backup():
     headers = {'Content-Type': 'application/json'}
@@ -190,38 +235,18 @@ def backup():
         except Exception as e:
             print str(e)
 #+END_SRC
-** Configure string analyzer
-#+NAME: config_string_analyzer
+** Add feedback records
+   - This function adds the feedback =json= records into specified =index= and
+     =type=
+   - Also it disables the string analyzer
+#+NAME: migrate_feedback_records
 #+BEGIN_SRC python
             
-def config_string_analyzer(index):
-    ANALYTICS_API = "%s/%s" % (ANALYTICS_URL, index)
-    data = {
-        "index" : {
-            "analysis" : {
-                "analyzer" : {
-                    "default" : {
-                        "type" : "keyword"
-                        }
-                    }
-                }
-            }
-        }
-    r = requests.put(ANALYTICS_API, data=json.dumps(data), headers=headers)
-    if r.status_code == 200:
-        return True
-    else:
-        return False
-   
-
-#+END_SRC
-** Migrate json records
-   This functions restores the =json= records into specified =index= and =type=
-#+NAME: migrate_json_records
-#+BEGIN_SRC python
-            
-def migrate_json_records(records, index, type):
-    config_string_analyzer(index)
+def migrate_feedback_records(records, index, type):
+    state = config_string_analyzer(index)
+    if (not state):
+        print "Failed to disable string analyzer"
+        exit()
     count = 0
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
     headers = {'Content-Type': 'application/json'}
@@ -244,16 +269,21 @@ def migrate_json_records(records, index, type):
             print str(e)
 #+END_SRC
 
-** Migrate usage
-   - This function migrates the usage records into specified =index= and =type=
-     also it contacts =LDS= to make the usage records consistent such as
-     =lab-name= and =exp-name=.
-   - This script will migrate the openedx usage analytics from =2016-10-07= to till date
+** Add usage records
+   - This function adds the usage =json= records into specified =index= and
+     =type=
+   - Also it disables the string analyzer
+   - While adding usage =json= records this function contacts =LDS= to make the
+     fields like =lab_name= and =exp_name= consistent
+
 #+NAME: migrate_usage
 #+BEGIN_SRC python
 
 def migrate_usage(usages, index, type):
-    config_string_analyzer(index)
+    state = config_string_analyzer(index)
+    if (not state):
+        print "Failed to disable string analyzer"
+        exit()
     count = 0
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
     usage_dict = {}
@@ -308,9 +338,9 @@ def migrate_usage(usages, index, type):
             print str(e)
 #+END_SRC
 
-** Migrate db
-   This function reads all =.json= files which are obtained in backup step and
-   invokes necessary functions to restore them into elasticsearch database.
+** Restore elasticsearch database
+   This function reads all =.json= files which are obtained in backup process
+   and invokes necessary functions to restore them into elasticsearch database.
 #+NAME: migrate_db
 #+BEGIN_SRC python
 
@@ -336,7 +366,7 @@ def migrate():
             try:
                 with open(file_name) as data_file:
                     cc_details = json.load(data_file)
-                migrate_json_records(cc_details, index, type)
+                migrate_feedback_records(cc_details, index, type)
 
             except Exception as e:
                 print str(e)
@@ -360,7 +390,7 @@ def migrate():
             try:
                 with open(file_name) as data_file:
                     feedbacks = json.load(data_file)
-                migrate_json_records(feedbacks, index, type)
+                migrate_feedback_records(feedbacks, index, type)
 
             except Exception as e:
                 print str(e)
@@ -373,7 +403,7 @@ def migrate():
             try:
                 with open(file_name) as data_file:
                     feedbacks = json.load(data_file)
-                migrate_json_records(feedbacks, index, type)
+                migrate_feedback_records(feedbacks, index, type)
 
             except Exception as e:
                 print str(e)
@@ -390,27 +420,26 @@ def migrate():
                 print str(e)
 
 #+END_SRC
-** main function
+** Main function
    This function invokes =backup()= or =migrate()= functions.
 #+NAME: main
 #+BEGIN_SRC python
 if __name__== "__main__":
-    backup()
+    #backup()
     #migrate()
 
 #+END_SRC
   
-
 * Important commands for dealing with Elasticsearch database.
   
-** Start/Stop/Check status of elasticsearch service
+*** Start/Stop/Check status of elasticsearch service
    - Generic command : service elasticsearch <start/stop/restart/status>
    #+BEGIN_EXAMPLE
    service elasticsearch start
    #+END_EXAMPLE
 
 
-** Create an index in elasticsearch 
+*** Create an index in elasticsearch 
    - An index can be created using Elasticsearch API
    - Invoke API using curl command or by using python-elasticsearch client.
    - Generic command  : curl -XPOST "http://<host-name>:<port-number>/<index-name>"
@@ -424,7 +453,7 @@ if __name__== "__main__":
     #+END_EXAMPLE
 
 
-** Insert a record in elasticsearch database 
+*** Insert a record in elasticsearch database 
    - Generic command : curl -XPOST "http://http://<hostname>:<port-number>/<index-name>/<doc-type>/[id-of-record]" -d 
                         {
                          "key1" : "value1",
@@ -448,7 +477,7 @@ if __name__== "__main__":
     #+END_SRC
 
 
-** Check the status of elasticsearch using curl command
+*** Check the status of elasticsearch using curl command
    - Generic command : curl http://<hostname>:<port-number> 
 
     #+BEGIN_EXAMPLE
@@ -475,7 +504,7 @@ if __name__== "__main__":
     #+END_EXAMPLE
 
 
-** List the existing indexes in elasticsearch database 
+*** List the existing indexes in elasticsearch database 
    - Generic command : curl http://<hostname>:<port-number>/_cat/indices?v
     #+BEGIN_EXAMPLE command
     root@vlabs-analytics:~# curl http://localhost:9200/_cat/indices?v
@@ -489,7 +518,7 @@ if __name__== "__main__":
     #+END_EXAMPLE
 
 
-** Fetch records from index
+*** Fetch records from index
    - To obtain data from elasticsearch use the command as shown
     #+BEGIN_EXAMPLE
     root@vlabs-analytics:~# curl -XGET "http://<hostname>:<port-number>/<index-name>/_search?pretty&size=<No-of-records>"
@@ -547,7 +576,7 @@ if __name__== "__main__":
     #+END_EXAMPLE
 
 
-** Delete an index in elasticsearch 
+*** Delete an index in elasticsearch 
    - Deleting an index will delete all documents under that index.  To DELETE
      an index, use the following command -
 
@@ -561,7 +590,7 @@ if __name__== "__main__":
      #+END_EXAMPLE
 
      
-* Configuring string analyzer for Elasticsearch 
+*** Configuring string analyzer for Elasticsearch 
   - Elasticsearch has default settings to analyze a string. For example
     see the example document given below -
     #+BEGIN_EXAMPLE
@@ -612,49 +641,43 @@ if __name__== "__main__":
     #+END_SRC
 
 
-* Query DSL for elasticsearch 
-** Fetch records matching the specific string from a field
+*** Query DSL for elasticsearch 
+
+**** Fetch records matching the specific string from a field
    - Given below is the syntax to serach for a specific string in a specific
      field.
 
 
    #+BEGIN_EXAMPLE
    GET /<index-name>/<doc-type>/_search?pretty&size=<no-of-records>
-   {
-   "query" : {
-                        "term" : { 
-                    "<Field-name>" : "<field value to search for>"
-                }
-            }
-        }
    #+END_EXAMPLE
-   Example run is given below -  
+   Example run is given below
    #+BEGIN_EXAMPLE
   GET /vlabs/usage/_search?pretty&size=50
-   {
-    "query" : {
-       "term" : { 
-                    "REGION" : "Telangana"
-                }
-            }
-        }
-    
+  {
+  "query": {
+    "term": {
+      "<Field-name>": "<field value to search for>"
+    }
+   }
+  }
    #+END_EXAMPLE
    Hence a search based on the string value of a filed in record is done 
    using =term= keyword of Elasticsearch Query DSL
 
-** To fetch analytics for a specific date 
-   Use the below query-
-   
+
+**** To fetch analytics for a specific date 
+     Use the below query   
    #+BEGIN_EXAMPLE
    GET /vlabs/usage/_search?pretty&size=50
-   {   
-       "query" : {
-       "term" : { 
-              "DATE_OF_EXPERIMENT" : "2016-10-07"
-               }
-             }
+   {
+    "query": {
+    "term": {
+      "DATE_OF_EXPERIMENT": "2016-10-07"
+     }
+     }
    }
+
    #+END_EXAMPLE
    Returns all the records added having date mentioned.
    Sample output is given below for 3 records 
@@ -678,49 +701,15 @@ if __name__== "__main__":
           "_id": "AVefLTSmYbJBYuvGUfkx",
           "_score": 4.942464,
           "_source": {
-            "LAB_ID": "MECH48",
-            "DATE_OF_EXPERIMENT": "2016-10-07",
-            "STUDENT_ID": "student",
-            "REGION": "Telangana",
-            "LAB_NAME": "Virtual Combustion and Atomization Laboratory",
-            "EXPERIMENT_NAME": "Numerical characterization of laminar premixed methane-air flames",
-            "EXPERIMENT_ID": "E99433",
-            "TIME_OF_EXPERIMENT": "12:46",
-            "IP_ADDRESS": "14.139.82.6"
-          }
-        },
-        {
-          "_index": "vlabs",
-          "_type": "usage",
-          "_id": "AVee7i6hYbJBYuvGUfkA",
-          "_score": 4.942464,
-          "_source": {
-            "LAB_ID": "ECE40",
-            "DATE_OF_EXPERIMENT": "2016-10-07",
-            "STUDENT_ID": "student",
-            "REGION": "Telangana",
-            "LAB_NAME": "Electronic Devices and Circuits",
-            "EXPERIMENT_NAME": "I-V Characteristics and Fabrication of p-n junction Diode",
-            "EXPERIMENT_ID": "E99646",
-            "TIME_OF_EXPERIMENT": "11:37",
-            "IP_ADDRESS": "14.139.82.6"
-          }
-        },
-        {
-          "_index": "vlabs",
-          "_type": "usage",
-          "_id": "AVefEWpPYbJBYuvGUfkh",
-          "_score": 4.942464,
-          "_source": {
-            "LAB_ID": "BIOTECH25",
-            "DATE_OF_EXPERIMENT": "2016-10-07",
-            "STUDENT_ID": "student",
-            "REGION": "Telangana",
-            "LAB_NAME": "Virtual Proteomics Laboratory",
-            "EXPERIMENT_NAME": "In-gel digestion of proteins for MS analysis",
-            "EXPERIMENT_ID": "E99613",
-            "TIME_OF_EXPERIMENT": "12:15",
-            "IP_ADDRESS": "14.139.82.6"
+            "lab_id": "mech48",
+            "date_of_experiment": "2016-10-07",
+            "student_id": "student",
+            "region": "Telangana",
+            "lab_name": "Virtual Combustion and Atomization Laboratory",
+            "experiment_name": "Numerical characterization of laminar premixed methane-air flames",
+            "experiment_id": "e99433",
+            "time_of_experiment": "12:46",
+            "ip_address": "14.139.82.6"
           }
         }
       ]
@@ -728,13 +717,11 @@ if __name__== "__main__":
     }
     #+END_EXAMPLE
 
-
 * References
   + https://www.elastic.co/products/elasticsearch
   + [[http://www.elasticsearchtutorial.com/elasticsearch-in-5-minutes.html][Elasticsearch in 5 mins]]
   + [[http://1.droppdf.com/files/FOeNs/elasticsearch-the-definitive-guide-clinton-gormley-zachary-tong.pdf][Elasticsearch Definitive Guide]]
   + [[https://www.elastic.co/guide/en/elasticsearch/guide/current/analysis-intro.html][Elasticsearch String analyzer]]
-
 
 * Tangle                                                        :boilerplate:
 *** Imports 
@@ -750,12 +737,11 @@ from dateutil.rrule import rrule, DAILY
 
 *** Sources
 #+BEGIN_SRC python :tangle migrate_elastic_db.py :eval no :noweb yes
-
 <<imports>>
 <<backup>>
 <<config_string_analyzer>>
 <<migrate_usage>>
-<<migrate_json_records>>
+<<migrate_feedback_records>>
 <<migrate_db>>
 <<main>>
 #+END_SRC

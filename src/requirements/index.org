@@ -1,4 +1,4 @@
-#+TITLE: Requirements of Analytics Service
+#+TITLE: Requirements to Setup Analytics Database Service
 #+AUTHOR: VLEAD
 #+DATE: [2017-08-28 Mon]
 #+SETUPFILE: ../org-templates/level-1.org
@@ -7,7 +7,8 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate the requirements of analytics service
+  This document will illustrate the requirements to design the analytics
+  database service for Virtual Labs
 
 * Requirements
   :PROPERTIES:
@@ -17,5 +18,21 @@
   :PROPERTIES:
   :CUSTOM_ID: req1
   :END: 
-  - Ability to store the user, feedback and usage analytics data of Virtual
-    Labs platform and other related information in json format
+  - Ability to store/retrieve the feedback and usage analytics of Virtual Labs
+    running on =AWS= cloud platform in the form of =json= records.
+
+** Req2
+  :PROPERTIES:
+  :CUSTOM_ID: req2
+  :END: 
+  - Ability to store/retrieve the feedback and usage analytics of Virtual Labs
+    running on =College Cloud= platform in the form of =json= records.
+
+** Req3
+  :PROPERTIES:
+  :CUSTOM_ID: req3
+  :END: 
+  - Ability to store/retrieve the analytics of users registered on =Virtual
+    Labs= and =Outreach Portal= platforms in the form of =json= records.
+
+    

@@ -1,4 +1,4 @@
-#+TITLE: Design of Elasticsearch database for Virtual Labs
+#+TITLE: Design of Analytics Database Service for Virtual Labs
 #+AUTHOR: VLEAD
 #+DATE: [2016-06-07 Tue]
 #+SETUPFILE: ../org-templates/level-1.org
@@ -7,30 +7,36 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate the design of analytics database for Virtual
-  Labs platform. Virtual Labs is using =elasticsearch= as =NoSQL= database for
-  storing analytics related data.
-  
-* Why Elasticsearch ?
+  This document will illustrate the design of analytics database service for
+  Virtual Labs platform.
 
-  - Since the user and usage analytics of Virtual Labs platform are in the
-    form of json records choosing =NoSQL= database is good option.
+* Choosing database
 
-  - Choosing =NoSQL= database such as =elasticsearch= is good for querying all
-    possibilities on json records since =elasticsearch= comes with in built
-    REST interface to perform =CRUD= operations.
+  - Currently the user, feedback and usage analytics records of Virtual Labs
+    platform are in the form of json records.
+ 
+  - Choosing =NoSQL= database such as =MongoDB= or =Elasticsearch= for schema
+    less records is good option than choosing =SQL= database.
 
-* About Elasticsearch
+  - Here Virtual Labs chosen =Elasticsearch= database as =NoSQL= database for
+    storing/retrieving analytics information.
+    + Reasons
+      - =Elasticsearch= comes with service which provides =REST APIs= interface
+        to perform Create, Read, Update and Delete operation on =json= records
+      - Also Very efficient when it comes to performance wise
+      - Provides =REST APIs= to perform advanced level search/retrieve queries
+        using =json= as a payload
 
-  1. Elasticsearch is a distributed, RESTful search and analytics engine
-  2. Elasticsearch is a opensource NoSQL database
-  3. Data in this database is stored in the form of a Documents.
+* More about Elasticsearch
+
+  1. Elasticsearch is a distributed and RESTful search and analytics engine.
+  2. Elasticsearch is a opensource NoSQL database.
+  3. Data in this database is stored in the form of a Documents and they are immutable
   4. Elasticsearch contains an =index= which is similar to Database in RDBMS.
   5. A =document= which are similar to row of a RDBMS.
   6. A =type= in elasticseach is similar to a table in RDBMS.
   7. Then comes to =field= which is similar to column of a mysql table
-  8. Elasticsearch works on RESTful APIs. API for GET, POST, PUT and DELETE are
-     used.
+  8. Elasticsearch works on RESTful APIs. Provides APIs for GET, POST, PUT and DELETE.
   9. For every request made to elasticsearch API, an ACK is returned as a
      response or else the expected output.
 
@@ -70,18 +76,18 @@
 
 * Model design
 
-** To store the feedback analytics of online labs.
+** To store the feedback analytics of labs running on Openedx platform.
      :PROPERTIES:
-     :CUSTOM_ID: feedback-online
+     :CUSTOM_ID: feedback-openedx
      :END: 
-     
-
+     Design to store the feedback analytics of labs running Openedx platform
+     (90 labs running as of Sep-01-2017)
     - index ::
                vlabs
+
     - type ::
-              feedbacks
-    - id :: 
-            yyyy-mm-dd (to identify feedback records by date)
+              feedback
+
     - document ::
 
        #+BEGIN_EXAMPLE
@@ -155,17 +161,20 @@
          }
        ]
        #+END_EXAMPLE
+
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
-      http://localhost/vlabs/feedbacks/id=yyyy-mm-dd
+      http://localhost/vlabs/feedback
       #+END_EXAMPLE
 
 ** To store the usage analytics of labs running on openedx aplatform
      :PROPERTIES:
      :CUSTOM_ID: openedx-usage
      :END: 
-
+     Design to store the usage analytics of labs running Openedx platform
+     (90 labs running as of Sep-01-2017)
+     
     - index ::
                vlabs
     - type ::
@@ -182,7 +191,9 @@
            "experiment_name": "Graph Traversals",
            "experiment_id": "E99774",
            "time_of_experiment": "11:06",
-           "ip_address": "14.139.82.6"
+           "ip_address": "14.139.82.6",
+           "discipline_name" : "Computer Science and Engineering",
+           "institute_name" : "IIIT Hyderabad"
        }
        #+END_EXAMPLE
     - Example REST API ::
@@ -194,43 +205,62 @@
      :PROPERTIES:
      :CUSTOM_ID: non-openedx-usage
      :END: 
-   
+     Design to store the usage analytics of labs running on non-openedx
+     platform and each lab's analytics are identified by =date= and =lab_id=
     - index ::
                vlabs
     - type ::
-              nonopenedx-usage
+              nonopenedx_usage
     - id :: 
-            yyyy-mm-dd (to identify usage analytics by date)
+            <labid>_<yyyy-mm-dd> (to identify the lab analytics by date)
 
     - document ::
 
        #+BEGIN_EXAMPLE
        {
-           "LAB_ID": "CCNSB04",
-           "LAB_NAME" : "Quantum Chemistry",
-           "INSTITUTE" : "IIIT-H",
-           "HITS" : 200,
-           "VISITS" : 400,
-           "USAGE " : 500
+           "lab_id": "ccnsb04",
+           "lab_name" : "Quantum Chemistry",
+           "institute_name" : "IIIT Hyderabad",
+           "discipline_name" : "Chemical Engineering",
+           "date" : 2017-09-01,
+           "hits" : 200,
+           "visits" : 400,
+           "usage" : 500
        }
        #+END_EXAMPLE
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
-      http://localhost/vlabs/nonopenedx-usage?id=yyyy-mm-dd
+      http://localhost/vlabs/nonopenedx_usage?ccnsb04_2017-09-01
       #+END_EXAMPLE
 
-** To store the details of college running college cloud platform
+** To store the details of the college running college cloud platform
      :PROPERTIES:
      :CUSTOM_ID: college-cloud
      :END: 
-   
+     Design to store the college's details where college cloud platform is
+     installed. Each college is identified by the =mac_address= of the machine
+     which is running college cloud platform
+     
     - index ::
                college_cloud
     - type ::
               details
     - id :: 
             <mac_addr>
+    - document ::
+
+      #+BEGIN_EXAMPLE
+      {
+        "college_address": "Waknaghat,solan",
+        "email_id": "sample@gmail.com",
+        "college_pincode": "173234",
+        "contact_no": "9999999999",
+        "mac_addr": "70:54:d2:7b:3d:36",
+        "contact_name": "Geetanjali",
+        "college_name": "juit"
+      }
+      #+END_EXAMPLE
 
     - Example REST API ::
 
@@ -242,13 +272,13 @@
      :PROPERTIES:
      :CUSTOM_ID: college-cloud-feedback
      :END: 
-
+     Design to store the feedback analytics of labs running on college cloud
+     platform and feedbacks are differentiated by =college_name= and
+     =mac_address= of the machine where the college cloud platform is installed
     - index ::
                college_cloud
     - type ::
-              collegename_macaddr_feedback
-    - id :: 
-            yyyy-mm-dd (to identify feedback records by date)
+              <collegename>_<macaddr>_<feedback>
 
     - document ::
 
@@ -326,18 +356,20 @@
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
-      http://localhost/college_cloud/jntu_98:40:bb:46:1d:58_feedbakcs
+      http://localhost/college_cloud/jntu_98:40:bb:46:1d:58_feedback
       #+END_EXAMPLE
 
 ** To store the usage analytics of labs running on college cloud platform   
      :PROPERTIES:
      :CUSTOM_ID: college-cloud-usage
      :END: 
-
+     Design to store the usage analytics of labs running on college cloud
+     platform and usage analytics are differentiated by =college_name= and
+     =mac_address= of the machine where the college cloud platform is installed
     - index ::
                college_cloud
     - type ::
-              collegename_macaddr_usage
+              <collegename>_<macaddr>_usage
     - document ::
 
        #+BEGIN_EXAMPLE
@@ -347,8 +379,10 @@
            "student_id": "student",
            "region": "Telangana",
            "lab_name": "Data Structures",
+           "institute_name" : "IIIT Hyderabad",
+           "discipline_name" : "Computer Science and Engineering",
            "experiment_name": "Graph Traversals",
-           "experiment_id": "E99774",
+           "experiment_id": "e99774",
            "time_of_experiment": "11:06",
            "ip_address": "14.139.82.6"
        }
@@ -357,19 +391,50 @@
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
-      http://localhost/college_cloud/details/98:40:bb:46:1d:58
+      http://localhost/college_cloud/jntu_98:40:bb:46:1d:58_usage
       #+END_EXAMPLE
-** To store the user analytics of openedx
+** To store the user analytics of Virtual Labs Website
      :PROPERTIES:
-     :CUSTOM_ID: college-cloud-usage
+     :CUSTOM_ID: user-analytics-vlabs
      :END: 
+     Design to store the user analytics of the Openedx platform running Virtual
+     Labs such as current logged in users and total registered users. And user
+     analytics are identified by the date
+    - index ::
+               vlabs
+    - type ::
+              openedx_user_analytics
+    - id :: 
+            <yyyy-mm-dd> (to identify user analytics by date)
+
+    - document ::
+
+       #+BEGIN_EXAMPLE
+       {
+         "current_logged_in_users" : 20,
+         "total_registered_users" : 100
+       }
+
+       #+END_EXAMPLE
+    - Example REST API ::
+
+      #+BEGIN_EXAMPLE
+      http://localhost/vlabs/openedx_user_analytics/2017-08-20
+      #+END_EXAMPLE
+** To store the user analytics of outreach portal
+     :PROPERTIES:
+     :CUSTOM_ID: outreach-user-analytics
+     :END: 
+     Design to store the user analytics of the Outreach Portal application such
+     as current logged in users and total registered users. And user analytics
+     are identified by the date
 
     - index ::
                vlabs
     - type ::
-              user_analytics
+              outreach_user_analytics
     - id :: 
-            yyyy-mm-dd (to identify user analytics by date)
+            <yyyy-mm-dd> (to identify user analytics by date)
 
     - document ::
 
@@ -383,55 +448,8 @@
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
-      http://localhost/vlabs/user_analytics/id=yyyy-mm-dd
+      http://localhost/vlabs/outreach_user_analytics/2017-08-20
       #+END_EXAMPLE
-** To store the user analytics of outreach portal
-     :PROPERTIES:
-     :CUSTOM_ID: college-cloud-usage
-     :END: 
-
-    - index ::
-               outreach
-    - type ::
-              user_analytics
-    - id :: 
-            yyyy-mm-dd (to identify user analytics by date)
-
-    - document ::
-
-       #+BEGIN_EXAMPLE
-       {
-         "current_logged_in_users" : 20,
-         "total_registered_users" : 100
-       }
-
-       #+END_EXAMPLE
-    - Example REST API ::
-
-      #+BEGIN_EXAMPLE
-      http://localhost/outreach/user_analytics/id=yyyy-mm-dd
-      #+END_EXAMPLE
-
-* Service Interplay
-#+BEGIN_HTML
-<img src="https://docs.google.com/drawings/d/e/2PACX-1vRIaLMh2dyfg_IEOkZneyi3Sv27DVgZDgGQKmuPzTR0fj5Udd0dQDSQE2VVw8hEqTtBVXZVTVhwrngD/pub?w=960&h=720">
-<p align="center"> Services Interplay </p>
-#+END_HTML
-
-- Virtual Labs on AWS :: 
-  + Total number of labs running on AWS :: 173
-    - Total number of labs running on Openedx platform :: 90
-    - Total number of labs running on Non openedx platform :: 83
-
-- Virtual Labs on College Cloud ::
-
-- Feedback ::
-
-- Outreach Portal ::
-
-- Analytics Service ::
-
-- Database ::
 
 * References
   + [[https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-ubuntu-14-04][Install ELK]]

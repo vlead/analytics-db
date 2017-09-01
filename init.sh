@@ -5,6 +5,7 @@ if [ -d literate-tools ]; then
     (cd literate-tools; git checkout readtheorg; git pull readtheorg)
 else
     git clone https://github.com/vlead/literate-tools.git
+    (cd literate-tools; git checkout readtheorg)
 fi
 
 if [ -L tangle-make ]; then
