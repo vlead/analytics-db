@@ -403,23 +403,27 @@
     - index ::
                vlabs
     - type ::
-              openedx_user_analytics
-    - id :: 
-            <yyyy-mm-dd> (to identify user analytics by date)
+              user_analytics_<yyyy-mm-dd>
 
     - document ::
 
        #+BEGIN_EXAMPLE
        {
-         "current_logged_in_users" : 20,
-         "total_registered_users" : 100
+          "message": "- - 183.82.186.105 - - [03/Sep/2017:15:38:49 +0530]  \"GET /dashboard HTTP/1.1\" 200 10958 0.217 \"https://vlabs.ac.in/login?next=/dashboard\" \"Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0\"",
+          "clientip": "183.82.186.105",
+          "time": "15:38:49",
+          "method": "GET",
+          "api_endpoint": "/dashboard",
+          "status_code": "200",
+          "referrer": "https://vlabs.ac.in/login?next=/dashboard",
+          "date": "2017-09-03"
        }
 
        #+END_EXAMPLE
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
-      http://localhost/vlabs/openedx_user_analytics/2017-08-20
+      http://localhost/vlabs/user_analytics_2017-08-20
       #+END_EXAMPLE
 ** To store the user analytics of outreach portal
      :PROPERTIES:
@@ -455,8 +459,17 @@
   Security for =elasticsearch= database service is provided at upstream server
   level (i.e nginx)
   1. By default =elasticsearch= service runs on port =9200=
-  2. To makte elasticsearch GET APIs available to the public we setup the upstream
-     server 
+  2. To make elasticsearch GET APIs available to the public we setup the
+     upstream web server (nginx) which runs on port =80= then forward all
+     incoming =80= requests to =9200=
+  3. Only =vlabs-analytics-api-service= domin/IP is allowed to make request on
+     =POST=, =PUT= and =DELETE= methods =GET= method is allowed from everyone
+* Design
+#+BEGIN_HTML
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vRIaLMh2dyfg_IEOkZneyi3Sv27DVgZDgGQKmuPzTR0fj5Udd0dQDSQE2VVw8hEqTtBVXZVTVhwrngD/pub?w=960&h=720">
+<p align="center"> Services Interplay </p>
+#+END_HTML
+
 * References
   + [[https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-ubuntu-14-04][Install ELK]]
   + [[https://www.elastic.co/][Learn ELK]]
