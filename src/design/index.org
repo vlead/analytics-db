@@ -403,7 +403,7 @@
     - index ::
                vlabs
     - type ::
-              user_analytics_<yyyy-mm-dd>
+              openedx_user_analytics_<yyyy-mm-dd>
 
     - document ::
 
@@ -423,7 +423,7 @@
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
-      http://localhost/vlabs/user_analytics_2017-08-20
+      http://localhost/vlabs/openedx_user_analytics_2017-08-20
       #+END_EXAMPLE
 ** To store the user analytics of outreach portal
      :PROPERTIES:
