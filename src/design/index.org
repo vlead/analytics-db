@@ -405,7 +405,7 @@
               openedx_user_analytics_<yyyy-mm-dd>
 
     - document ::
-
+                  Sample =json= to get the current logged in users
        #+BEGIN_EXAMPLE
        {
           "nginx_log": "- - 183.82.186.105 - - [03/Sep/2017:15:38:49 +0530]  \"GET /dashboard HTTP/1.1\" 200 10958 0.217 \"https://vlabs.ac.in/login?next=/dashboard\" \"Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0\"",
@@ -419,6 +419,21 @@
        }
 
        #+END_EXAMPLE
+       Sample =json= to get the logout  users
+       #+BEGIN_EXAMPLE
+       {
+          "nginx_log": "- - 183.82.186.105 - - [03/Sep/2017:15:38:49 +0530]  \"GET /logout HTTP/1.1\" 200 10958 0.217 \"https://vlabs.ac.in/login?next=/dashboard\" \"Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0\"",
+          "clientip": "183.82.186.105",
+          "time": "15:38:49",
+          "method": "GET",
+          "api_endpoint": "/logout",
+          "status_code": "200",
+          "referrer": "https://vlabs.ac.in/login?next=/dashboard",
+          "date": "2017-09-03"
+       }
+
+       #+END_EXAMPLE
+
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
