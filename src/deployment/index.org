@@ -1,4 +1,4 @@
-#+TITLE: Configuring Analytics Database Service
+#+TITLE: Run Analytics Database Service on Dev environment
 #+AUTHOR: VLEAD
 #+DATE: [2016-06-07 Tue]
 #+SETUPFILE: ../org-templates/level-1.org
@@ -14,102 +14,113 @@
   3. Important sample APIs to deal with the =elasticsearch=
 
 * Steps to run =elasticsearch= database service behind =nginx= on development environment
-- [[https://github.com/vlead/vlead-templates/blob/develop/vagrant-boxes/export-vagrant-box.org#steps-to-create-vm-using-vagrant][Create Machine]] using vagrant 
-- Update machine
-#+BEGIN_EXAMPLE
-sudo apt-get update -y
-#+END_EXAMPLE
-- Install the =software-properties-common= Package
-#+BEGIN_EXAMPLE
-sudo apt-get install software-properties-common python-software-properties -y
-#+END_EXAMPLE
-- Install =java v8=
-#+BEGIN_EXAMPLE
-sudo apt-add-repository ppa:webupd8team/java -y
-sudo apt-get update -y
-echo 'oracle-java8-installer shared/accepted-oracle-license-v1-1 select true' | sudo debconf-set-selections
-sudo apt-get install oracle-java8-installer -y
-#+END_EXAMPLE
-- Install elasticsearch =v1.7.2=
-#+BEGIN_EXAMPLE
-wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.2.deb && dpkg -i elasticsearch-1.7.2.deb
-#+END_EXAMPLE
-
-- Start Elasticsearch
-#+BEGIN_EXAMPLE
-sudo service elasticsearch start
-#+END_EXAMPLE
-- Install nginx web server
-#+BEGIN_EXAMPLE
-sudo apt-get install nginx -y
-#+END_EXAMPLE
-- Start nginx
-#+BEGIN_EXAMPLE
-sudo service nginx start
-#+END_EXAMPLE
-- Routing the requests through nginx
-  + First lets disable Elasticsearch from receiving external requests. In the
-    elasticsearch server, open the file /etc/elasticsearch/elasticsearch.yml
-    for editting. Comment out the config network.bind_host and
-    network.publish_host.
-#+BEGIN_EXAMPLE
-#network.bind_host: #some_value
-#network.publish_host: #some_other_value 
-network.host: localhost
-#+END_EXAMPLE
-- Check by restarting service
-#+BEGIN_EXAMPLE
-sudo service elasticsearch restart
-#+END_EXAMPLE
-- Run elasticsearch behind nginx
-  + To accomplish that, we need to create a file
-    /etc/nginx/sites-available/elasticsearch with the following content.
-#+BEGIN_EXAMPLE
-server {
-    listen 80;
-    server_name localhost;
-    location / {
-    limit_except GET {
-      auth_basic           "Login required";
-      auth_basic_user_file /etc/nginx/.htpasswd;
-    } 
-        rewrite ^/(.*) /$1 break;
-        proxy_ignore_client_abort on;
-        proxy_pass http://localhost:9200;
-        proxy_redirect http://localhost:9200 http://localhost/;
-        proxy_set_header  X-Real-IP  $remote_addr;
-        proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header  Host $http_host;
+1. [[https://github.com/vlead/vlead-templates/blob/develop/vagrant-boxes/export-vagrant-box.org#steps-to-create-vm-using-vagrant][Create Machine]] using vagrant
+2. Update machine
+   #+BEGIN_EXAMPLE
+   sudo apt-get update -y
+   #+END_EXAMPLE
+3. Install the =software-properties-common= Package
+   #+BEGIN_EXAMPLE
+   sudo apt-get install software-properties-common python-software-properties -y
+   #+END_EXAMPLE
+4. Install =java v8=
+   =java= version =8= is the pre-requisite to install =elasticsearch=
+   #+BEGIN_EXAMPLE
+   sudo apt-add-repository ppa:webupd8team/java -y
+   sudo apt-get update -y
+   echo 'oracle-java8-installer shared/accepted-oracle-license-v1-1 select true' | sudo debconf-set-selections
+   sudo apt-get install oracle-java8-installer -y
+   #+END_EXAMPLE
+5. Install elasticsearch =v1.7.2=
+   #+BEGIN_EXAMPLE
+   wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.2.deb && dpkg -i elasticsearch-1.7.2.deb
+   #+END_EXAMPLE
+   
+6. Start Elasticsearch
+   #+BEGIN_EXAMPLE
+   sudo service elasticsearch start
+   #+END_EXAMPLE
+7. Install nginx web server
+   #+BEGIN_EXAMPLE
+   sudo apt-get install nginx -y
+   #+END_EXAMPLE
+8. Start nginx
+   #+BEGIN_EXAMPLE
+   sudo service nginx start
+   #+END_EXAMPLE
+9. Routing the requests through nginx
+   + First lets disable Elasticsearch from receiving external requests. In the
+     elasticsearch server, open the file =/etc/elasticsearch/elasticsearch.yml=
+     for editting. Comment out the config network.bind_host and
+     network.publish_host.
+   #+BEGIN_EXAMPLE
+   #network.bind_host: #some_value
+   #network.publish_host: #some_other_value 
+   network.host: localhost
+   #+END_EXAMPLE
+10. Enable dynamic scripting
+    - Dynamic scripting (i.e. inline and indexed scripts) are disabled by
+      default for security reasons. To enable them for just groovy scripts in
+      aggregations you can added the following line the
+      =/etc/elasticsearch/elasticsearch.yml= file on each node:
+     #+BEGIN_EXAMPLE
+     script.engine.groovy.inline.aggs: on
+     #+END_EXAMPLE
+11. Check by restarting service
+    #+BEGIN_EXAMPLE
+    sudo service elasticsearch restart
+    #+END_EXAMPLE
+12. Run elasticsearch behind nginx
+    + To accomplish that, we need to create a file
+      /etc/nginx/sites-available/elasticsearch with the following content.
+    #+BEGIN_EXAMPLE
+    server {
+        listen 80;
+        server_name localhost;
+        location / {
+        limit_except GET {
+          allow   192.168.33.1/24;
+          deny    all;    
+          auth_basic           "Login required";
+          auth_basic_user_file /etc/nginx/.htpasswd;
+        } 
+            rewrite ^/(.*) /$1 break;
+            proxy_ignore_client_abort on;
+            proxy_pass http://localhost:9200;
+            proxy_redirect http://localhost:9200 http://localhost/;
+            proxy_set_header  X-Real-IP  $remote_addr;
+            proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header  Host $http_host;
+        }
     }
-}
 
-#+END_EXAMPLE
-- Setup credentials
-#+BEGIN_EXAMPLE
-htpasswd -c /etc/nginx/.htpasswd username
-#+END_EXAMPLE
-- Create symbolic link to nginx virtual conf file =elasticsearch=
-#+BEGIN_EXAMPLE
-sudo ln /etc/nginx/sites-available/elasticsearch /etc/nginx/sites-enabled/
-#+END_EXAMPLE
-- Remove =default= file from =nginx=
-#+BEGIN_EXAMPLE
-rm /etc/nginx/sites-enabled/default
-#+END_EXAMPLE
-- Reload & restart nginx
-#+BEGIN_EXAMPLE
-sudo service nginx reload
-sudo service nginx restart
-#+END_EXAMPLE
-- Run =nginx= and =elasticsearch= on boot time
-#+BEGIN_EXAMPLE
-sudo update-rc.d nginx defaults
-sudo update-rc.d elasticsearch defaults
-#+END_EXAMPLE
-- Access elasticsearch on browser
-#+BEGIN_EXAMPLE
-firefox http://localhost
-#+END_EXAMPLE
+    #+END_EXAMPLE
+13. Setup credentials
+   #+BEGIN_EXAMPLE
+   htpasswd -c /etc/nginx/.htpasswd username
+   #+END_EXAMPLE
+14. Create symbolic link to nginx virtual conf file =elasticsearch=
+   #+BEGIN_EXAMPLE
+   sudo ln /etc/nginx/sites-available/elasticsearch /etc/nginx/sites-enabled/
+   #+END_EXAMPLE
+15. Remove =default= file from =nginx=
+   #+BEGIN_EXAMPLE
+   rm /etc/nginx/sites-enabled/default
+   #+END_EXAMPLE
+16. Reload & restart nginx
+   #+BEGIN_EXAMPLE
+   sudo service nginx reload
+   sudo service nginx restart
+   #+END_EXAMPLE
+17. Run =nginx= and =elasticsearch= on boot time
+   #+BEGIN_EXAMPLE
+   sudo update-rc.d nginx defaults
+   sudo update-rc.d elasticsearch defaults
+   #+END_EXAMPLE
+18. Access elasticsearch on browser
+   #+BEGIN_EXAMPLE
+   firefox http://localhost
+   #+END_EXAMPLE
 
 * Script to migrate the elasticsearch database 
   
@@ -122,7 +133,7 @@ firefox http://localhost
      field values such as =lab_name=, =exp_name= ..etc in consistent with =LDS=
      service data
 
-** Disable string analyzer
+** Function to disable string analyzer
   - Elasticsearch has default settings to analyze a string.  For example see
     the example document given below
     #+BEGIN_EXAMPLE
@@ -205,16 +216,19 @@ def backup():
                         
                         start_date = date(2016, 10, 07)
                         end_date = date(2017, 8, 31)
-                        for dt in rrule(DAILY, dtstart=start_date, until=end_date):
+                        for dt in rrule(DAILY, dtstart=start_date, \
+                                        until=end_date):
                             t_date = dt.strftime("%Y-%m-%d")
-                            GET_DOCS_API = "%s/%s/%s/_search?q=DATE_OF_EXPERIMENT:%s&size=10000" %(ELASTIC_DB_URL, index_name, str(type), t_date)
+                            GET_DOCS_API = \
+                              "%s/%s/%s/_search?\q=DATE_OF_EXPERIMENT:%s&size=10000" %(ELASTIC_DB_URL, index_name, str(type), t_date)
                             r = requests.get(GET_DOCS_API)
                             if r.status_code == 200:
                                 docs = r.json()['hits']['hits']
                                 for doc in docs:
                                     temp.append(doc['_source'])
                     else:
-                        GET_DOCS_API = "%s/%s/%s/_search?size=10000" %(ELASTIC_DB_URL, index_name, str(type))
+                        GET_DOCS_API = "%s/%s/%s/_search?size=10000" \
+                          %(ELASTIC_DB_URL, index_name, str(type))
                         r = requests.get(GET_DOCS_API)
                         if r.status_code == 200:
                             docs = r.json()['hits']['hits']

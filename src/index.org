@@ -7,18 +7,17 @@
 #+OPTIONS: ^:nil
 
 * Version/Branch History
-  
+
 * Application
 
-  The purpose of configuring NoSQL database application (elasticsearch) is to
-  facilitate the storage of user and usage analytics of virtual labs platform
-  and other information in the form of json records and thereby to provide APIs
-  for related queries on json data
-
+  The purpose of setting up =NoSQL= database service (elasticsearch) is to
+  facilitate the storage of user, feedback and usage analytics of Virtual Labs
+  platform and other information in the form of json records. Also to enable
+  end user to querying data in possibilities.
 
 * Introduction
-  This document describes the requirements, design and deployement of
-  elasticsearch.
+  This document illustrates the requirements, design and deployement of
+  analytics database service for Virtual Labs
 
 
 1. [[./requirements/index.org][Requirements]]

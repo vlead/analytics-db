@@ -7,8 +7,8 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate the design of analytics database service for
-  Virtual Labs platform.
+  This document will illustrate the design & data model of analytics database
+  service for Virtual Labs platform.
 
 * Choosing database
 
@@ -80,8 +80,9 @@
      :PROPERTIES:
      :CUSTOM_ID: feedback-openedx
      :END: 
-     Design to store the feedback analytics of labs running Openedx platform
-     (90 labs running as of Sep-01-2017)
+     Design to store the feedback analytics of labs running Openedx
+     platform. Every single feedback record is stored as single =json= record.
+
     - index ::
                vlabs
 
@@ -91,7 +92,6 @@
     - document ::
 
        #+BEGIN_EXAMPLE
-       [
          {
            "user_id": "Null",
            "responses": [
@@ -159,7 +159,6 @@
            "date": "20-10-2016",
            "id": "7"
          }
-       ]
        #+END_EXAMPLE
 
     - Example REST API ::
@@ -173,7 +172,6 @@
      :CUSTOM_ID: openedx-usage
      :END: 
      Design to store the usage analytics of labs running Openedx platform
-     (90 labs running as of Sep-01-2017)
      
     - index ::
                vlabs
@@ -207,6 +205,7 @@
      :END: 
      Design to store the usage analytics of labs running on non-openedx
      platform and each lab's analytics are identified by =date= and =lab_id=
+
     - index ::
                vlabs
     - type ::
@@ -272,6 +271,7 @@
      :PROPERTIES:
      :CUSTOM_ID: college-cloud-feedback
      :END: 
+
      Design to store the feedback analytics of labs running on college cloud
      platform and feedbacks are differentiated by =college_name= and
      =mac_address= of the machine where the college cloud platform is installed
@@ -283,7 +283,6 @@
     - document ::
 
        #+BEGIN_EXAMPLE
-       [
          {
            "user_id": "Null",
            "responses": [
@@ -351,7 +350,6 @@
            "date": "20-10-2016",
            "id": "7"
          }
-       ]
        #+END_EXAMPLE
     - Example REST API ::
 
@@ -398,8 +396,9 @@
      :CUSTOM_ID: user-analytics-vlabs
      :END: 
      Design to store the user analytics of the Openedx platform running Virtual
-     Labs such as current logged in users and total registered users. And user
-     analytics are identified by the date
+     Labs such as current logged in users, total registered users and total
+     active users. User analytics are identified by the date
+
     - index ::
                vlabs
     - type ::
@@ -409,7 +408,7 @@
 
        #+BEGIN_EXAMPLE
        {
-          "message": "- - 183.82.186.105 - - [03/Sep/2017:15:38:49 +0530]  \"GET /dashboard HTTP/1.1\" 200 10958 0.217 \"https://vlabs.ac.in/login?next=/dashboard\" \"Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0\"",
+          "nginx_log": "- - 183.82.186.105 - - [03/Sep/2017:15:38:49 +0530]  \"GET /dashboard HTTP/1.1\" 200 10958 0.217 \"https://vlabs.ac.in/login?next=/dashboard\" \"Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0\"",
           "clientip": "183.82.186.105",
           "time": "15:38:49",
           "method": "GET",
@@ -430,7 +429,7 @@
      :CUSTOM_ID: outreach-user-analytics
      :END: 
      Design to store the user analytics of the Outreach Portal application such
-     as current logged in users and total registered users. And user analytics
+     as current logged in users and total registered users. User analytics
      are identified by the date
 
     - index ::
@@ -456,23 +455,35 @@
       #+END_EXAMPLE
 
 * Security
-  Security for =elasticsearch= database service is provided at upstream server
-  level (i.e nginx)
-  1. By default =elasticsearch= service runs on port =9200=
-  2. To make elasticsearch GET APIs available to the public we setup the
-     upstream web server (nginx) which runs on port =80= then forward all
-     incoming =80= requests to =9200=
-  3. Only =vlabs-analytics-api-service= domin/IP is allowed to make request on
-     =POST=, =PUT= and =DELETE= methods =GET= method is allowed from everyone
+  Security for REST APIs of =elasticsearch= database service is designed as
+  follows
+
+    + GET ::
+             Anyone from outside world can make GET requests to =elasticsearch=
+             database service APIs without any authentication
+
+    + PUT, POST and DELETE :: 
+                             Only domain =vlabs.ac.in= or sub domains
+         =*.vlabs.ac.in= are allowed to make =PUT=, =POST= and =DELETE= requests
+         providing valid =user= and =password= credentials.
+         
 * Design
 #+BEGIN_HTML
-<img src="https://docs.google.com/drawings/d/e/2PACX-1vRIaLMh2dyfg_IEOkZneyi3Sv27DVgZDgGQKmuPzTR0fj5Udd0dQDSQE2VVw8hEqTtBVXZVTVhwrngD/pub?w=960&h=720">
-<p align="center"> Services Interplay </p>
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vQGLwlCDUKU2l0IIfLAoIw4-kjZsy6ozoDT5Rm8um3iSYehVuJvvu-qd0szYvLo7stZqiQ-2yKH9dr8/pub?w=960&h=720">
+<p align="center"> Analytics Database Security </p>
 #+END_HTML
+To edit the feedback relations image click [[https://docs.google.com/drawings/d/11GDV3JOzpr-CtfI_6r1BmP1xnuXBu0ty5x9Kzq68sJo/edit][here]]
+
+  Above design illustrates the following
+  - Only domain =vlabs.ac.in= or sub-domains =*.vlabs.ac.in= can make GET, PUT,
+    POST and DELETE requests to =elasticsearch= database service APIs.
+  - Other domains only can make =GET= requests to =elasticsearch= database
+    service APIs
+    
 
 * References
-  + [[https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-ubuntu-14-04][Install ELK]]
-  + [[https://www.elastic.co/][Learn ELK]]
-  + [[http://www.webupd8.org/2014/03/how-to-install-oracle-java-8-in-debian.html][Install Java 8]]
+  + [[https://www.digitalocean.com/community/tutorials/how-to-install-elasticsearch-logstash-and-kibana-elk-stack-on-ubuntu-14-04][Install Elasticsearch]]
+  + [[https://www.elastic.co/][Learn Elasticsearch]]
+  + [[http://www.webupd8.org/2014/03/how-to-install-oracle-java-8-in-debian.html][Install Java8]]
 
 
