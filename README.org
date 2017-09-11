@@ -1,3 +1,3 @@
-* Elasticsearch Database Service
-  To run the =elasticsearch= database service on development environment please
+* Analytics Database Service
+  To run the analytics database service on development environment please
   use [[https://github.com/vlead/analytics-db/blob/refactor/src/deployment/index.org#introduction][documentation]]
