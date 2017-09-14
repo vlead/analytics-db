@@ -391,24 +391,25 @@
       #+BEGIN_EXAMPLE
       http://localhost/college_cloud/jntu_98:40:bb:46:1d:58_usage
       #+END_EXAMPLE
-** To store the user analytics of Virtual Labs Website
+** To store the user session analytics of Virtual Labs Website (on openedx platform)
+
      :PROPERTIES:
      :CUSTOM_ID: user-analytics-vlabs
      :END: 
-     Design to store the user analytics of the Openedx platform running Virtual
-     Labs such as current logged in users, total registered users and total
-     active users. User analytics are identified by the date
+     Design to store the =nginx= server logs of current active session on
+     Openedx platform running Virtual Labs. server logs are identified by the
+     date
 
     - index ::
                vlabs
     - type ::
-              openedx_user_analytics_<yyyy-mm-dd>
+              openedx_user_session_analytics_<yyyy-mm-dd>
 
     - document ::
                   Sample =json= to get the current logged in users
        #+BEGIN_EXAMPLE
        {
-          "nginx_log": "- - 183.82.186.105 - - [03/Sep/2017:15:38:49 +0530]  \"GET /dashboard HTTP/1.1\" 200 10958 0.217 \"https://vlabs.ac.in/login?next=/dashboard\" \"Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0\"",
+          "message": "- - 183.82.186.105 - - [03/Sep/2017:15:38:49 +0530]  \"GET /dashboard HTTP/1.1\" 200 10958 0.217 \"https://vlabs.ac.in/login?next=/dashboard\" \"Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0\"",
           "clientip": "183.82.186.105",
           "time": "15:38:49",
           "method": "GET",
@@ -422,7 +423,7 @@
        Sample =json= to get the logout  users
        #+BEGIN_EXAMPLE
        {
-          "nginx_log": "- - 183.82.186.105 - - [03/Sep/2017:15:38:49 +0530]  \"GET /logout HTTP/1.1\" 200 10958 0.217 \"https://vlabs.ac.in/login?next=/dashboard\" \"Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0\"",
+          "message": "- - 183.82.186.105 - - [03/Sep/2017:15:38:49 +0530]  \"GET /logout HTTP/1.1\" 200 10958 0.217 \"https://vlabs.ac.in/login?next=/dashboard\" \"Mozilla/5.0 (X11; Linux x86_64; rv:45.0) Gecko/20100101 Firefox/45.0\"",
           "clientip": "183.82.186.105",
           "time": "15:38:49",
           "method": "GET",
@@ -437,8 +438,40 @@
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
+      http://localhost/vlabs/openedx_user_session_analytics_2017-08-20
+      #+END_EXAMPLE
+
+** To store the user analytics of Virtual Labs Website (on openedx platform)
+
+     :PROPERTIES:
+     :CUSTOM_ID: user-analytics-vlabs
+     :END: 
+     Design to store the user analytics of the Openedx platform running Virtual
+     Labs such as total registered, active and inactive users. User analytics
+     are identified by the date
+
+    - index ::
+               vlabs
+    - type ::
+              openedx_user_analytics_<yyyy-mm-dd>
+
+    - document ::
+                  Sample =json= to get the current logged in users
+       #+BEGIN_EXAMPLE
+       {
+        "date" : "2017-09-13",
+        "registered_users" : 6000,
+        "active_users" : 3000,
+        "inactive_users" : 3000
+       }
+       #+END_EXAMPLE
+
+    - Example REST API ::
+
+      #+BEGIN_EXAMPLE
       http://localhost/vlabs/openedx_user_analytics_2017-08-20
       #+END_EXAMPLE
+
 ** To store the user analytics of outreach portal
      :PROPERTIES:
      :CUSTOM_ID: outreach-user-analytics
