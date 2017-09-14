@@ -453,7 +453,10 @@
     - index ::
                vlabs
     - type ::
-              openedx_user_analytics_<yyyy-mm-dd>
+              openedx_user_analytics
+              
+    - id ::
+            <<yyy-mm-dd>>
 
     - document ::
                   Sample =json= to get the current logged in users
@@ -469,7 +472,7 @@
     - Example REST API ::
 
       #+BEGIN_EXAMPLE
-      http://localhost/vlabs/openedx_user_analytics_2017-08-20
+      http://localhost/vlabs/openedx_user_analytics/2017-08-20
       #+END_EXAMPLE
 
 ** To store the user analytics of outreach portal
