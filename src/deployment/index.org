@@ -313,8 +313,14 @@ def migrate_usage(usages, index, type):
             r = requests.get(LDS_API, headers=headers)
             if r.status_code == 200:
                 usage_dict['lab_name'] = r.json()['lab_name']
-                usage_dict['discipline_name'] = r.json()['discipline']['discipline_name']
-                usage_dict['institute_name'] = r.json()['institute']['institute_name']
+                usage_dict['discipline_name'] = \
+                  r.json()['discipline']['discipline_name']
+                usage_dict['discipline_id'] = \
+                  r.json()['discipline']['discipline_id']
+                usage_dict['institute_name'] = \
+                  r.json()['institute']['institute_name']
+                usage_dict['institute_id'] = \
+                  r.json()['institute']['institute_id']
             else:
                 usage_dict['lab_name'] = usage['LAB_NAME']
 
@@ -439,6 +445,7 @@ def migrate():
 #+NAME: main
 #+BEGIN_SRC python
 if __name__== "__main__":
+    
     #backup()
     #migrate()
 
