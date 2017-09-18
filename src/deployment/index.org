@@ -204,6 +204,8 @@ def config_string_analyzer(index):
 #+BEGIN_SRC python
 
 ELASTIC_DB_URL = "http://192.168.33.10"
+USER="username"
+PASSWORD="password"
 LDS_URL = "http://lds.vlabs.ac.in"
 file_names = []
 
@@ -240,7 +242,7 @@ def backup():
                                         until=end_date):
                             t_date = dt.strftime("%Y-%m-%d")
                             GET_DOCS_API = \
-                              "%s/%s/%s/_search?\q=DATE_OF_EXPERIMENT:%s&size=10000" %(ELASTIC_DB_URL, index_name, str(type), t_date)
+                              "%s/%s/%s/_search?q=DATE_OF_EXPERIMENT:%s&size=10000" %(ELASTIC_DB_URL, index_name, str(type), t_date)
                             r = requests.get(GET_DOCS_API)
                             if r.status_code == 200:
                                 docs = r.json()['hits']['hits']
@@ -278,18 +280,17 @@ def backup():
             
 def migrate_feedback_records(records, index, type):
     state = config_string_analyzer(index)
-    if (not state):
-        print "Failed to disable string analyzer"
-        exit()
     count = 0
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
     headers = {'Content-Type': 'application/json'}
     for record in records:
         if 'mac_addr' in record:
-            ELASTIC_DB_API = "%s/%s/%s/%s" % (ELASTIC_DB_URL, index, type, record['mac_addr'])
+            ELASTIC_DB_API = "%s/%s/%s/%s" % \
+              (ELASTIC_DB_URL, index, type, record['mac_addr'])
 
         try:
-            r = requests.post(ELASTIC_DB_API, data=json.dumps(record), headers=headers)
+            r = requests.post(ELASTIC_DB_API, auth=(USER, PASSWORD), \
+                              data=json.dumps(record), headers=headers)
             if r.status_code == 201:
                 count = count + 1
                 print "************************************"
@@ -315,9 +316,6 @@ def migrate_feedback_records(records, index, type):
 
 def migrate_usage(usages, index, type):
     state = config_string_analyzer(index)
-    if (not state):
-        print "Failed to disable string analyzer"
-        exit()
     count = 0
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
     usage_dict = {}
@@ -363,7 +361,8 @@ def migrate_usage(usages, index, type):
         usage_dict['ip_address'] = usage['IP_ADDRESS']
 
         try:
-            r = requests.post(ELASTIC_DB_API, data=json.dumps(usage_dict), headers=headers)
+            r = requests.post(ELASTIC_DB_API, auth=(USER, PASSWORD), \
+                              data=json.dumps(usage_dict), headers=headers)
             if r.status_code == 201:
                 count = count + 1
                 print "************************************"

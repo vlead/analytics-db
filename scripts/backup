@@ -15,6 +15,9 @@ chown -R elasticsearch:elasticsearch $BACKUP_DIR
 # Setup path.repo path to $BACKUP_DIR for elasticsearch to indentify where backup should be stored
 echo path.repo : $BACKUP_DIR >> /etc/elasticsearch/elasticsearch.yml
 
+# Restart elasticsearch service
+service elasticsearch restart
+
 # Install curl to make API calls to elasticsearch
 apt-get install curl -y
 
