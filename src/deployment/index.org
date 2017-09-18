@@ -15,7 +15,7 @@
 
 * Steps to run =analytics-db= database service behind =nginx=
 
-1. [[https://github.com/vlead/vlead-templates/blob/develop/vagrant-boxes/export-vagrant-box.org#steps-to-create-vm-using-vagrant][Create Machine]] using vagrant
+1. [[https://github.com/vlead/vlead-templates/blob/develop/vagrant-boxes/create-vagrant-box.org#steps-to-create-vm-using-vagrant][Create Machine]] using vagrant
 
 2. Update machine
    #+BEGIN_EXAMPLE

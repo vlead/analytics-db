@@ -8,7 +8,7 @@
 
 * Introduction
   This document illustrate the requirements to design the database model for
-  storing/retrieval of Analytics of Virtual Labs platform.
+  storing/retrieval Analytics of Virtual Labs platform.
 
 * Requirements
   :PROPERTIES:

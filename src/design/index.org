@@ -7,8 +7,8 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate the design & database model of analytics
-  database service for Virtual Labs platform.
+  This document will illustrate the design & database model for analytics
+  database service.
 
 * Choosing database
 

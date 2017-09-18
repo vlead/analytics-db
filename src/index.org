@@ -10,12 +10,13 @@
   =v0.0.1=
 * Application
 
-  1. An Application service (elasticsearch) which uses =NoSQL=
+  1. Database application service (i.e elasticsearch) which uses =NoSQL=
      database.
   2. =VLEAD= chosen this service to facilitate the storage/retrieval of user,
      feedback and usage analytics of Virtual Labs platform and other
      information in the form of json records.
-  3. Also this service provides APIs to query the data in all possible ways
+  3. Also this service provides APIs to query the analytics data in all
+     possible ways
 
 * Introduction
   This document illustrates the requirements, design and deployement of
