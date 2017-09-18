@@ -7,7 +7,7 @@
 #+OPTIONS: ^:nil
 
 * Version/Branch History
-  =v0.0.1=
+  *Release :-* =v0.0.1=
 * Application
 
   1. Database application service (i.e elasticsearch) which uses =NoSQL=
@@ -29,7 +29,6 @@
 
 3. [[./deployment/index.org][Deployment]]
 
-   
 * Tangle                                       :boilerplate:
 #+BEGIN_SRC python :eval no :tangle __init__.py
 print "analytics database service package"
