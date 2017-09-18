@@ -5,3 +5,13 @@
 ** Run service on development environment
    To run the Analytics database service on development environment please use
    [[https://github.com/vlead/analytics-db/blob/refactor/src/deployment/index.org#introduction][documentation]]
+** Post installation steps
+*** Setup credentials to analytics-db   
+   - Post installation, execute below command to configure the credentials
+     #+BEGIN_EXAMPLE
+     htpasswd -c /etc/nginx/.htpasswd username
+     #+END_EXAMPLE
+   - Enter the password when it prompts for the given =username=
+   - Document =username= and =password= for future reference.
+    
+
