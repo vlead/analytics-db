@@ -7,8 +7,9 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate the design & database model for analytics
-  database service.
+  This document illustrates the design and database model for storing/retrieval
+  of Virtual Labs Analytics
+  
 
 * Choosing database
 
