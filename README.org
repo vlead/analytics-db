@@ -1,40 +1,17 @@
-* Post Installation Steps
-** Configure Elasticsearch
-  - Add below configuration to access =elasticsearch= service from
-    outside network
-#+BEGIN_SRC
-echo "network.host: 0.0.0.0" >> /etc/elasticsearch/elasticsearch.yml
-echo "http.port: 9200" >> /etc/elasticsearch/elasticsearch.yml
-#+END_SRC
- - Restart =elasticsearch= service
-#+BEGIN_SRC
-echo `sudo service elasticsearch restart`
-#+END_SRC
-  - Save nginx configuration to /etc/nginx/sites-enabled/default and
-    restart nginx
-#+BEGIN_SRC 
-cd /root/labs/elk-stack-for-analytics/scripts
-echo `sudo cp elasticsearch-nginx.conf /etc/nginx/sites-enabled/default`
-echo `sudo service nginx restart`
-#+END_SRC
-  - Create an elasticsearch index named feedback and then disable
-    string analyzer in it
-#+BEGIN_SRC 
-curl -XPOST http://localhost:9200/feedback -d '{"index" : { "analysis" : { "analyzer" : { "default" : { "type" : "keyword" } } } } }'
-#+END_SRC
-  - Create dashboard admin user
-    + Create a user named vlabs-dashboard and give some password to it.
-      #+BEGIN_SRC command
-       sudo htpasswd -c /etc/nginx/htpasswd.users <dashboard-username>
-       sudo htpasswd -c /etc/nginx/htpasswd.users vlabs-dashboard
-      #+END_SRC
-
-    + Restart services
-       #+BEGIN_SRC command
-       service nginx restart 
-       service elasticsearch restart
-       service kibana restart
-       service logstash restart
-       #+END_SRC
-  
+* Analytics Database Service
+** Introduction
+   This repository contains the database design and model to store/retrieve
+   Analytics of Virtual Labs
+** Run service on development environment
+   To run the Analytics database service on development environment please use
+   [[https://github.com/vlead/analytics-db/blob/refactor/src/deployment/index.org#introduction][documentation]]
+** Post installation steps
+*** Setup credentials to analytics-db   
+   - Post installation, execute below command to configure the credentials
+     #+BEGIN_EXAMPLE
+     htpasswd -c /etc/nginx/.htpasswd username
+     #+END_EXAMPLE
+   - Enter the password when it prompts for the given =username=
+   - Document =username= and =password= for future reference.
+    
 

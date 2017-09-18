@@ -1,0 +1,6 @@
+# POST API call to restore backup                         #Authentication
+user="testuser"
+password="pswd"
+                                          
+DATE=2017-08-22-17:30:20
+curl -u $user:$password -XPOST 'http://127.0.0.1/_snapshot/analytics_backup/'"$DATE"'/_restore'

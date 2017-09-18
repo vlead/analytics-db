@@ -1,21 +1,38 @@
-#+TITLE: Configuring  the Nginx server
+#+TITLE: Requirements to Setup Analytics Database Service
 #+AUTHOR: VLEAD
-#+DATE: [2016-06-07 Tue]
+#+DATE: [2017-08-28 Mon]
 #+SETUPFILE: ../org-templates/level-1.org
 #+TAGS: boilerplate(b)
 #+EXCLUDE_TAGS: boilerplate
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate the requirements of ELK server
+  This document illustrate the requirements to design the database model for
+  storing/retrieval Analytics of Virtual Labs platform.
 
 * Requirements
-  Following are the requirements -
-  + A server to store VLABS Open-edX analytics in a desired format (In
-    this case it is JSON format)
-  + A visualization tool to view logs stored/fetched. Hence Kibana.
-  + Also the same server can be used to store logs and generate
-    visualizations out of it.
+  :PROPERTIES:
+  :CUSTOM_ID: requirements
+  :END: 
+** Req1
+  :PROPERTIES:
+  :CUSTOM_ID: req1
+  :END: 
+  - Ability to store/retrieve the feedback and usage analytics of Virtual Labs
+    running on =AWS= cloud platform in the form of =json= records.
 
+** Req2
+  :PROPERTIES:
+  :CUSTOM_ID: req2
+  :END: 
+  - Ability to store/retrieve the feedback and usage analytics of Virtual Labs
+    running on =College Cloud= platform in the form of =json= records.
 
+** Req3
+  :PROPERTIES:
+  :CUSTOM_ID: req3
+  :END: 
+  - Ability to store/retrieve the analytics of users registered on =Virtual
+    Labs= and =Outreach Portal= platforms in the form of =json= records.
 
+    

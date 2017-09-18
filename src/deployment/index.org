@@ -1,42 +1,791 @@
-#+TITLE: Configuring  the Nginx server
+#+TITLE: Run Analytics Database Service on Development environment
 #+AUTHOR: VLEAD
-#+DATE: [2016-06-07 Tue]
+#+DATE: [2017-08-10 Sun]
 #+SETUPFILE: ../org-templates/level-1.org
 #+TAGS: boilerplate(b)
 #+EXCLUDE_TAGS: boilerplate
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate the configuration requrired for Nginx 
-  to run ELK server. 
+  This document will illustrate the following
+  1. Steps to run and configure the =analytics-db= database service (i.e
+     elasticsearch) on development environment.
+  2. Script to backup/restore =analytics-db= database
+  3. Important sample APIs to deal with the =elasticsearch= database
+
+* Steps to run =analytics-db= database service behind =nginx=
+
+1. [[https://github.com/vlead/vlead-templates/blob/develop/vagrant-boxes/create-vagrant-box.org#steps-to-create-vm-using-vagrant][Create Machine]] using vagrant
+
+2. Update machine
+   #+BEGIN_EXAMPLE
+   sudo apt-get update -y
+   #+END_EXAMPLE
+
+3. Install the =software-properties-common= Package
+   #+BEGIN_EXAMPLE
+   sudo apt-get install software-properties-common python-software-properties -y
+   #+END_EXAMPLE
+
+4. Install =java v8=
+   =java= version =8= is the pre-requisite to install =elasticsearch=
+   #+BEGIN_EXAMPLE
+   sudo apt-add-repository ppa:webupd8team/java -y
+   sudo apt-get update -y
+   echo 'oracle-java8-installer shared/accepted-oracle-license-v1-1 select true' | sudo debconf-set-selections
+   sudo apt-get install oracle-java8-installer -y
+   #+END_EXAMPLE
+
+5. Install elasticsearch =v1.7.2=
+   #+BEGIN_EXAMPLE
+   wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.2.deb && dpkg -i elasticsearch-1.7.2.deb
+   #+END_EXAMPLE
+   
+6. Start Elasticsearch
+   #+BEGIN_EXAMPLE
+   sudo service elasticsearch start
+   #+END_EXAMPLE
+
+7. Install nginx web server
+   #+BEGIN_EXAMPLE
+   sudo apt-get install nginx -y
+   #+END_EXAMPLE
+
+8. Start nginx
+   #+BEGIN_EXAMPLE
+   sudo service nginx start
+   #+END_EXAMPLE
+
+9. Routing the requests through nginx
+   + First lets disable Elasticsearch from receiving external requests. In the
+     elasticsearch server, open the file =/etc/elasticsearch/elasticsearch.yml=
+     for editting. Comment out the config network.bind_host and
+     network.publish_host.
+   #+BEGIN_EXAMPLE
+   #network.bind_host: #some_value
+   #network.publish_host: #some_other_value 
+   network.host: localhost
+   #+END_EXAMPLE
+
+10. Enable dynamic scripting
+    - Dynamic scripting (i.e. inline and indexed scripts) are disabled by
+      default for security reasons. To enable them for just groovy scripts in
+      aggregations you can added the following line the
+      =/etc/elasticsearch/elasticsearch.yml= file on each node:
+     #+BEGIN_EXAMPLE
+     script.engine.groovy.inline.aggs: on
+     #+END_EXAMPLE
+
+11. Check by restarting service
+    #+BEGIN_EXAMPLE
+    sudo service elasticsearch restart
+    #+END_EXAMPLE
+
+12. Run elasticsearch behind nginx
+    + To accomplish that, we need to create a file
+      /etc/nginx/sites-available/elasticsearch with the following content.
+    #+BEGIN_EXAMPLE
+    server {
+        listen 80;
+        server_name localhost;
+        location / {
+        limit_except GET {
+          allow   192.168.33.1/24;
+          allow   127.0.0.1/24;
+          deny    all;    
+          auth_basic           "Login required";
+          auth_basic_user_file /etc/nginx/.htpasswd;
+        } 
+            rewrite ^/(.*) /$1 break;
+            proxy_ignore_client_abort on;
+            proxy_pass http://localhost:9200;
+            proxy_redirect http://localhost:9200 http://localhost/;
+            proxy_set_header  X-Real-IP  $remote_addr;
+            proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header  Host $http_host;
+        }
+    }
+
+    #+END_EXAMPLE
+
+13. Setup credentials
+   #+BEGIN_EXAMPLE
+   htpasswd -c /etc/nginx/.htpasswd username
+   #+END_EXAMPLE
+
+14. Create symbolic link to nginx virtual conf file =elasticsearch=
+   #+BEGIN_EXAMPLE
+   sudo ln /etc/nginx/sites-available/elasticsearch /etc/nginx/sites-enabled/
+   #+END_EXAMPLE
+
+15. Remove =default= file from =nginx=
+   #+BEGIN_EXAMPLE
+   rm /etc/nginx/sites-enabled/default
+   #+END_EXAMPLE
+
+16. Reload & restart nginx
+   #+BEGIN_EXAMPLE
+   sudo service nginx reload
+   sudo service nginx restart
+   #+END_EXAMPLE
+
+17. Run =nginx= and =elasticsearch= on boot time
+   #+BEGIN_EXAMPLE
+   sudo update-rc.d nginx defaults
+   sudo update-rc.d elasticsearch defaults
+   #+END_EXAMPLE
+
+18. Access elasticsearch on browser
+   #+BEGIN_EXAMPLE
+   firefox http://localhost
+   #+END_EXAMPLE
+
+* Script to migrate the analytics-db (i.e elasticsearch) database
+  
+  1. This script takes the backup of all existing =indexes= in version [[https://github.com/vlead/analytics-db/releases/tag/v1.0.0][v1.0.0]]
+  2. During backup each =index= and its associated =types= data is stored into
+     the =.json= file with naming convention as =index_type.json=
+  3. This script also restores the data which is obtained in step(1) as per new
+     analytics-db database [[https://github.com/vlead/analytics-db/blob/refactor/src/design/index.org#design-of-elasticsearch-database][design]].
+  4. During the restore process script contacts [[http://lds.vlabs.ac.in][LDS]] service to make all the
+     field values such as =lab_name=, =exp_name= ..etc in consistent with =LDS=
+     service data
+
+** Function to disable string analyzer
+  - Elasticsearch has default settings to analyze a string.  For example see
+    the example document given below
+    #+BEGIN_EXAMPLE
+    {
+    "name" : "Sripathi Kammari",
+    "age" : "24" 
+    }
+    #+END_EXAMPLE
+
+  - When search queries executed, you see different values for "Sripathi" and
+    "Kammari" even though it is a single value assigned to "name" key.
+
+  - To Override this default behavior, custom settings are done while before
+    creating an index.
+
+#+NAME: config_string_analyzer
+#+BEGIN_SRC python
+            
+def config_string_analyzer(index):
+    headers = {'Content-Type': 'application/json'}
+    ELASTIC_DB_API = "%s/%s" % (ELASTIC_DB_URL, index)
+    data = {
+        "index" : {
+            "analysis" : {
+                "analyzer" : {
+                    "default" : {
+                        "type" : "keyword"
+                        }
+                    }
+                }
+            }
+        }
+    auth = auth(USER, PASSWORD)
+    r = requests.put(ELASTIC_DB_API, auth=auth, data=json.dumps(data),\
+                     headers=headers)
+    if r.status_code == 200 or r.status_code == 201:
+        return True
+    else:
+        return False
+   
+
+#+END_SRC
+** Function to backup the analytics-db database
+   - This script takes the backup of all existing =indexes= in version [[https://github.com/vlead/analytics-db/releases/tag/v1.0.0][v1.0.0]]
+   - During backup each =index= and its associated =types= data is stored into
+     the =.json= file with naming convention as =index_type.json=
+   - This script will backup the usage analytics from =2016-10-07= to till date
+
+#+NAME: backup
+#+BEGIN_SRC python
+
+ELASTIC_DB_URL = "http://192.168.33.10"
+LDS_URL = "http://lds.vlabs.ac.in"
+file_names = []
+
+def backup():
+    headers = {'Content-Type': 'application/json'}
+    GET_INDEXS_API = "%s/_cat/indices" % (ELASTIC_DB_URL)
+
+    try:
+        r = requests.get(GET_INDEXS_API, headers=headers)
+        if r.status_code == 200:
+            indexes = r.json()
+        else:
+            print "Failed to get index lists"
+            
+    except Exception as e:
+        print str(e)
+
+    for index in indexes:
+        index_name = index['index']
+        GET_TYPES_API = "%s/%s" % (ELASTIC_DB_URL, index_name)
+
+        try:
+            r = requests.get(GET_TYPES_API)
+            if r.status_code == 200:
+                types = r.json()[index_name]['mappings'].keys()
+                for type in types:
+                    temp = []
+
+                    if index_name == "vlabs" and type == "usage":
+                        
+                        start_date = date(2016, 10, 07)
+                        end_date = date(2017, 8, 31)
+                        for dt in rrule(DAILY, dtstart=start_date, \
+                                        until=end_date):
+                            t_date = dt.strftime("%Y-%m-%d")
+                            GET_DOCS_API = \
+                              "%s/%s/%s/_search?\q=DATE_OF_EXPERIMENT:%s&size=10000" %(ELASTIC_DB_URL, index_name, str(type), t_date)
+                            r = requests.get(GET_DOCS_API)
+                            if r.status_code == 200:
+                                docs = r.json()['hits']['hits']
+                                for doc in docs:
+                                    temp.append(doc['_source'])
+                    else:
+                        GET_DOCS_API = "%s/%s/%s/_search?size=10000" \
+                          %(ELASTIC_DB_URL, index_name, str(type))
+                        r = requests.get(GET_DOCS_API)
+                        if r.status_code == 200:
+                            docs = r.json()['hits']['hits']
+                            for doc in docs:
+                                temp.append(doc['_source'])
+                    file_name = "%s_%s.json" % (index_name, str(type))
+                    file_names.append(file_name)
+                    try:
+                        f = open(file_name, 'w')
+                        json.dump(temp, f)
+                        f.close()
+                    except Exception as e:
+                        print str(e)
+
+            else:
+                print "Failed to get types list"
+
+        except Exception as e:
+            print str(e)
+#+END_SRC
+** Add feedback records
+   - This function adds the feedback =json= records into specified =index= and
+     =type=
+   - Also it disables the string analyzer
+#+NAME: migrate_feedback_records
+#+BEGIN_SRC python
+            
+def migrate_feedback_records(records, index, type):
+    state = config_string_analyzer(index)
+    if (not state):
+        print "Failed to disable string analyzer"
+        exit()
+    count = 0
+    ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
+    headers = {'Content-Type': 'application/json'}
+    for record in records:
+        if 'mac_addr' in record:
+            ELASTIC_DB_API = "%s/%s/%s/%s" % (ELASTIC_DB_URL, index, type, record['mac_addr'])
+
+        try:
+            r = requests.post(ELASTIC_DB_API, data=json.dumps(record), headers=headers)
+            if r.status_code == 201:
+                count = count + 1
+                print "************************************"
+                print ELASTIC_DB_API
+                print "Added record %s/%s" % (count, len(records))
+                print "************************************"
+            else:
+                print "failed to add record %s" % (record)
+
+        except Exception as e:
+            print str(e)
+#+END_SRC
+
+** Add usage records
+   - This function adds the usage =json= records into specified =index= and
+     =type=
+   - Also it disables the string analyzer
+   - While adding usage =json= records this function contacts =LDS= to make the
+     fields like =lab_name= and =exp_name= consistent
+
+#+NAME: migrate_usage
+#+BEGIN_SRC python
+
+def migrate_usage(usages, index, type):
+    state = config_string_analyzer(index)
+    if (not state):
+        print "Failed to disable string analyzer"
+        exit()
+    count = 0
+    ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
+    usage_dict = {}
+    headers = {'Content-Type': 'application/json'}
+    for usage in usages:
+        usage_dict['lab_id'] = usage['LAB_ID'].lower()
+        usage_dict['date_of_experiment'] = usage['DATE_OF_EXPERIMENT']
+        usage_dict['student_id'] = usage['STUDENT_ID']
+        usage_dict['region'] = usage['REGION']
+        LDS_API = "%s/labs?lab_id=%s" % (LDS_URL, usage_dict['lab_id'])
+
+        try:
+            r = requests.get(LDS_API, headers=headers)
+            if r.status_code == 200:
+                usage_dict['lab_name'] = r.json()['lab_name']
+                usage_dict['discipline_name'] = \
+                  r.json()['discipline']['discipline_name']
+                usage_dict['discipline_id'] = \
+                  r.json()['discipline']['discipline_id']
+                usage_dict['institute_name'] = \
+                  r.json()['institute']['institute_name']
+                usage_dict['institute_id'] = \
+                  r.json()['institute']['institute_id']
+            else:
+                usage_dict['lab_name'] = usage['LAB_NAME']
+
+        except Exception as e:
+            print str(e)
+            
+        usage_dict['experiment_id'] = usage['EXPERIMENT_ID'].lower()
+        LDS_API = "%s/experiments?exp_id=%s" % (LDS_URL, usage_dict['experiment_id'])
+
+        try:
+            r = requests.get(LDS_API, headers=headers)
+            if r.status_code == 200:
+                usage_dict['experiment_name'] = r.json()['exp_name']
+            else:
+                usage_dict['experiment_name'] = usage['EXPERIMENT_NAME']
+        except Exception as e:
+            print str(e)
+
+        usage_dict['time_of_experiment'] = usage['TIME_OF_EXPERIMENT']
+        usage_dict['ip_address'] = usage['IP_ADDRESS']
+
+        try:
+            r = requests.post(ELASTIC_DB_API, data=json.dumps(usage_dict), headers=headers)
+            if r.status_code == 201:
+                count = count + 1
+                print "************************************"
+                print ELASTIC_DB_API
+                print "Added record %s/%s" % (count, len(usages))
+                print "************************************"            
+
+            else:
+                print "failed to add usage record %s" % (usage_dict)
+
+        except Exception as e:
+            print str(e)
+#+END_SRC
+
+** Restore analytics database
+   This function reads all =.json= files which are obtained in backup process
+   and invokes necessary functions to restore them into analytics-db database.
+#+NAME: migrate_db
+#+BEGIN_SRC python
+
+def migrate():
+
+    for file_name in file_names:
+        if file_name == "vlabs_usage.json":
+            index = "vlabs"
+            type = "openedx_usage"
+
+            try:
+                with open(file_name) as data_file:
+                    usages = json.load(data_file)
+                migrate_usage(usages, index, type)
+
+            except Exception as e:
+                print str(e)
+
+        if file_name == "college_cloud_details.json":
+            index = "college_cloud"
+            type = "details"
+
+            try:
+                with open(file_name) as data_file:
+                    cc_details = json.load(data_file)
+                migrate_feedback_records(cc_details, index, type)
+
+            except Exception as e:
+                print str(e)
+                
+        if file_name == "matrusri-college_70:54:d2:7b:3d:70_usages.json":
+            index = "college_cloud"
+            type = "matrusri-college_70:54:d2:7b:3d:70_usage"
+
+            try:
+                with open(file_name) as data_file:
+                    cc_usages = json.load(data_file)
+                migrate_usage(cc_usages, index, type)
+
+            except Exception as e:
+                print str(e)
+                
+        if file_name == "matrusri-college_70:54:d2:7b:3d:70_feedback.json":
+            index = "college_cloud"
+            type = "matrusri-college_70:54:d2:7b:3d:70_feedback"
+
+            try:
+                with open(file_name) as data_file:
+                    feedbacks = json.load(data_file)
+                migrate_feedback_records(feedbacks, index, type)
+
+            except Exception as e:
+                print str(e)
+                
+        if file_name == "juit_70:54:d2:7b:3d:36_feedback.json":
+            index = "college_cloud"
+            type = "juit_70:54:d2:7b:3d:36_feedback"
+            ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
+
+            try:
+                with open(file_name) as data_file:
+                    feedbacks = json.load(data_file)
+                migrate_feedback_records(feedbacks, index, type)
+
+            except Exception as e:
+                print str(e)
+        if file_name == "juit_70:54:d2:7b:3d:36_usages.json":
+            index = "college_cloud"
+            type = "juit_70:54:d2:7b:3d:36_usage"
+
+            try:
+                with open(file_name) as data_file:
+                    cc_usages = json.load(data_file)
+                migrate_usage(cc_usages, index, type)
+
+            except Exception as e:
+                print str(e)
+
+#+END_SRC
+** Main function
+   This function invokes =backup()= or =migrate()= functions.
+#+NAME: main
+#+BEGIN_SRC python
+if __name__== "__main__":
+    
+    #backup()
+    #migrate()
+
+#+END_SRC
+  
+* Important commands for dealing with Elasticsearch database.
+  
+*** Start/Stop/Check status of elasticsearch service
+   - Generic command : service elasticsearch <start/stop/restart/status>
+   #+BEGIN_EXAMPLE
+   service elasticsearch start
+   #+END_EXAMPLE
 
 
-* Install all dependencies and setup the software
-  Configure the Nginx with specific configuration for elasticsearch 
+*** Create an index in elasticsearch 
+   - An index can be created using Elasticsearch API
+   - Invoke API using curl command or by using python-elasticsearch client.
+   - Generic command  : curl -XPOST "http://<host-name>:<port-number>/<index-name>"
+    #+BEGIN_EXAMPLE
+    root@vlabs-analytics:~# curl -XPOST "http://localhost:9200/test-index"
+    #+END_EXAMPLE
+   - If index is successfully created you get a True ACK from elasticsearch
+     server.
+    #+BEGIN_EXAMPLE
+    {"acknowledged":true}
+    #+END_EXAMPLE
 
-#+BEGIN_SRC sh :tangle setup.sh :eval no
-#!/bin/bash
-# Shell script to install deb package dependencies as well as python package
-# dependencies for dataservice.
 
-# if any proxy server
-#PROXY=""
-# file to store the generated password
+*** Insert a record in elasticsearch database 
+   - Generic command : curl -XPOST "http://http://<hostname>:<port-number>/<index-name>/<doc-type>/[id-of-record]" -d 
+                        {
+                         "key1" : "value1",
+                         "KeyN" : "valueN"
+                        }'
+     #+BEGIN_EXAMPLE
+     root@vlabs-analytics:~# curl -XPOST "http://localhost:9200/test-index/document-test/" -d '{"name":"Sripathi", "age":"23"}'
+     #+END_EXAMPLE
+   - If record is sucessfull inserted you get a ACK as shown An ID for each
+     record is dynamically generated, if it is not mentioned while inserting
+     data.
+    #+BEGIN_SRC command
+    {
+    "_index":"test-index",
+    "_type":"document-test",
+    "_id":"AViVv6dqvXkOVLf8Bz4E",
+    "_version":1,
+    "_shards":{"total":2,"successful":1,"failed":0},
+    "created":true
+    }
+    #+END_SRC
 
-if [[ `id -u` -ne 0 ]]; then
-  echo "You have to execute this script as super user!"
-  exit 1;
-fi
 
-echo "host:0.0.0.0" >> /etc/elasticsearch/elasticsearch.yml
-echo "port:9200" >> /etc/elasticsearch/elasticsearch.yml
+*** Check the status of elasticsearch using curl command
+   - Generic command : curl http://<hostname>:<port-number> 
 
-sudo cp /root/ovpl/elk-stack-for-analytics/scripts/elasticsearch-nginx.conf /etc/nginx/sites-enabled/default
+    #+BEGIN_EXAMPLE
+    root@vlabs-analytics:~# curl http://localhost:9200/
+    #+END_EXAMPLE
+   - Above comand gives version information, cluster build time, cluster name
+     of elastisearch. See given output is given below -
+
+    #+BEGIN_EXAMPLE
+    {
+      "name" : "Janus",
+      "cluster_name" : "elasticsearch",
+      "cluster_uuid" : "aUdpyb8BR3ieeLEj3q5Z7Q",
+      "version" : {
+        "number" : "2.4.1",
+        "build_hash" : "c67dc32e24162035d18d6fe1e952c4cbcbe79d16",
+        "build_timestamp" : "2016-09-27T18:57:55Z",
+        "build_snapshot" : false,
+        "lucene_version" : "5.5.2"
+      },
+      "tagline" : "You Know, for Search"
+    }
+
+    #+END_EXAMPLE
+
+
+*** List the existing indexes in elasticsearch database 
+   - Generic command : curl http://<hostname>:<port-number>/_cat/indices?v
+    #+BEGIN_EXAMPLE command
+    root@vlabs-analytics:~# curl http://localhost:9200/_cat/indices?v
+    #+END_EXAMPLE
+   - Output for above command is
+
+    #+BEGIN_EXAMPLE
+    health status index   pri rep docs.count docs.deleted store.size pri.store.size 
+    yellow open   .kibana   1   1          1            0      3.1kb          3.1kb 
+    yellow open   vlabs     5   1          0            0       795b           795b
+    #+END_EXAMPLE
+
+
+*** Fetch records from index
+   - To obtain data from elasticsearch use the command as shown
+    #+BEGIN_EXAMPLE
+    root@vlabs-analytics:~# curl -XGET "http://<hostname>:<port-number>/<index-name>/_search?pretty&size=<No-of-records>"
+    root@vlabs-analytics:~# curl -XGET "http://localhost:9200/vlabs/_search?pretty&size=2"
+    #+END_EXAMPLE
+    Output obtained as given below -
+    #+BEGIN_EXAMPLE
+    {
+      "took" : 1,
+      "timed_out" : false,
+      "_shards" : {
+        "total" : 5,
+        "successful" : 5,
+        "failed" : 0
+      },
+      "hits" : {
+        "total" : 2671,
+        "max_score" : 1.0,
+        "hits" : [ {
+          "_index" : "vlabs",
+          "_type" : "usage",
+          "_id" : "AVee00ocYbJBYuvGUfjp",
+          "_score" : 1.0,
+          "_source" : {
+            "LAB_ID" : "EEE06",
+            "DATE_OF_EXPERIMENT" : "2016-10-07",
+            "STUDENT_ID" : "student",
+            "REGION" : "Telangana",
+            "LAB_NAME" : "Virtual Power Lab",
+            "EXPERIMENT_NAME" : "To Study the over-current relay and the effect of PSM and TSM",
+            "EXPERIMENT_ID" : "E99850",
+            "TIME_OF_EXPERIMENT" : "11:07",
+            "IP_ADDRESS" : "14.139.82.6"
+          }
+        }, {
+          "_index" : "vlabs",
+          "_type" : "usage",
+          "_id" : "AVeew8TSYbJBYuvGUfjP",
+          "_score" : 1.0,
+          "_source" : {
+            "LAB_ID" : "CHEM01",
+            "DATE_OF_EXPERIMENT" : "2016-10-07",
+            "STUDENT_ID" : "student",
+            "REGION" : "Telangana",
+            "LAB_NAME" : "Chemical Engineering Lab",
+            "EXPERIMENT_NAME" : "Flow measurement by orificemeter and venturimeter",
+            "EXPERIMENT_ID" : "E99656",
+            "TIME_OF_EXPERIMENT" : "10:50",
+            "IP_ADDRESS" : "14.139.82.6"
+          }
+        } ]
+      }
+    }
+
+    #+END_EXAMPLE
+
+
+*** Delete an index in elasticsearch 
+   - Deleting an index will delete all documents under that index.  To DELETE
+     an index, use the following command -
+
+    #+BEGIN_EXAMPLE
+    General Syntax # curl -XDELETE "http://<hostname>:<port-number>/<index-name>"
+    root@vlabs-analytics:~# curl -XDELETE "http://localhost:9200/test-index"
+    #+END_EXAMPLE
+   - Once deleted, an ACK is given as shown below -
+     #+BEGIN_EXAMPLE command
+     {"acknowledged":true}
+     #+END_EXAMPLE
+
+     
+*** Configuring string analyzer for Elasticsearch 
+  - Elasticsearch has default settings to analyze a string. For example
+    see the example document given below -
+    #+BEGIN_EXAMPLE
+    {
+    "name" : "Sripathi Kammari",
+    "age" : "23" 
+    }
+    #+END_EXAMPLE
+
+  - When visualizations are generated in kibana, you see different graphs for
+    "Sripathi" and "Kammari" even though it is a single value assigned to
+    "name" key.
+
+  - To Override this default behavior, custom settings are done while creating
+    an index.  To disable default string analyzer use the general syntax and
+    example as shown -
+
+    #+BEGIN_EXAMPLE
+
+    curl -XPUT http://<hostname>:<port-number>/<index-name> -d '{
+        "index" : {
+            "analysis" : {
+                "analyzer" : {
+                    "default" : {
+                        "type" : "keyword"
+                    }
+                }
+            }
+        }
+    }'
+    #+END_EXAMPLE
+  - The above command will create an index which does not exist and overrite
+    the settings to disable analyzer.
+
+  - A example using the above command is -
+    #+BEGIN_SRC command
+    curl -XPUT localhost:9200/test-index -d '{
+        "index" : {
+            "analysis" : {
+                "analyzer" : {
+                    "default" : {
+                        "type" : "keyword"
+                    }
+                }
+            }
+        }
+    }'
+    #+END_SRC
+
+
+*** Query DSL for elasticsearch 
+
+**** Fetch records matching the specific string from a field
+   - Given below is the syntax to serach for a specific string in a specific
+     field.
+
+
+   #+BEGIN_EXAMPLE
+   GET /<index-name>/<doc-type>/_search?pretty&size=<no-of-records>
+   #+END_EXAMPLE
+   Example run is given below
+   #+BEGIN_EXAMPLE
+  GET /vlabs/usage/_search?pretty&size=50
+  {
+  "query": {
+    "term": {
+      "<Field-name>": "<field value to search for>"
+    }
+   }
+  }
+   #+END_EXAMPLE
+   Hence a search based on the string value of a filed in record is done 
+   using =term= keyword of Elasticsearch Query DSL
+
+
+**** To fetch analytics for a specific date 
+     Use the below query   
+   #+BEGIN_EXAMPLE
+   GET /vlabs/usage/_search?pretty&size=50
+   {
+    "query": {
+    "term": {
+      "DATE_OF_EXPERIMENT": "2016-10-07"
+     }
+     }
+   }
+
+   #+END_EXAMPLE
+   Returns all the records added having date mentioned.
+   Sample output is given below for 3 records 
+
+    #+BEGIN_EXAMPLE
+    {
+    "took": 7,
+    "timed_out": false,
+    "_shards": {
+      "total": 5,
+      "successful": 5,
+      "failed": 0
+    },
+    "hits": {
+      "total": 87,
+      "max_score": 4.942464,
+      "hits": [
+        {
+          "_index": "vlabs",
+          "_type": "usage",
+          "_id": "AVefLTSmYbJBYuvGUfkx",
+          "_score": 4.942464,
+          "_source": {
+            "lab_id": "mech48",
+            "date_of_experiment": "2016-10-07",
+            "student_id": "student",
+            "region": "Telangana",
+            "lab_name": "Virtual Combustion and Atomization Laboratory",
+            "experiment_name": "Numerical characterization of laminar premixed methane-air flames",
+            "experiment_id": "e99433",
+            "time_of_experiment": "12:46",
+            "ip_address": "14.139.82.6"
+          }
+        }
+      ]
+     }
+    }
+    #+END_EXAMPLE
+
+* References
+  + https://www.elastic.co/products/elasticsearch
+  + [[http://www.elasticsearchtutorial.com/elasticsearch-in-5-minutes.html][Elasticsearch in 5 mins]]
+  + [[http://1.droppdf.com/files/FOeNs/elasticsearch-the-definitive-guide-clinton-gormley-zachary-tong.pdf][Elasticsearch Definitive Guide]]
+  + [[https://www.elastic.co/guide/en/elasticsearch/guide/current/analysis-intro.html][Elasticsearch String analyzer]]
+
+* Tangle                                                        :boilerplate:
+*** Imports 
+
+#+NAME: imports
+#+BEGIN_SRC python
+
+import requests
+import json
+from datetime import datetime, timedelta, date
+from dateutil.rrule import rrule, DAILY
 
 #+END_SRC
 
+*** Sources
+#+BEGIN_SRC python :tangle migrate_analytcs_db.py :eval no :noweb yes
 
-* Tangle 				     			:boilerplate:
-#+BEGIN_SRC python :eval no :tangle __init__.py
-print "deployment package"
+<<imports>>
+<<backup>>
+<<config_string_analyzer>>
+<<migrate_usage>>
+<<migrate_feedback_records>>
+<<migrate_db>>
+<<main>>
+
 #+END_SRC
