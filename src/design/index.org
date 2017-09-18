@@ -7,8 +7,8 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document will illustrate the design & data model of analytics database
-  service for Virtual Labs platform.
+  This document will illustrate the design & database model of analytics
+  database service for Virtual Labs platform.
 
 * Choosing database
 
@@ -76,12 +76,80 @@
 
 * Model design
   Following are the various scenarios for which database model is defined
+
+** To store the usage analytics of labs running on openedx aplatform
+     :PROPERTIES:
+     :CUSTOM_ID: openedx-usage
+     :END: 
+     Design to store the usage analytics of labs running Openedx platform
+     
+    - index ::
+               vlabs
+    - type ::
+              openedx_usage
+    - document ::
+
+       #+BEGIN_EXAMPLE
+       {
+           "lab_id": "cse01",
+           "date_of_experiment": "2016-10-19",
+           "student_id": "student",
+           "region": "Telangana",
+           "lab_name": "Data Structures",
+           "experiment_name": "Graph Traversals",
+           "experiment_id": "E99774",
+           "time_of_experiment": "11:06",
+           "ip_address": "14.139.82.6",
+           "discipline_name" : "Computer Science and Engineering",
+           "discipline_id" : "cse",
+           "institute_name" : "IIIT Hyderabad"
+           "institute_id" : "iiith"
+       }
+       #+END_EXAMPLE
+    - Example REST API ::
+
+      #+BEGIN_EXAMPLE
+      http://localhost/vlabs/openedx_usage
+      #+END_EXAMPLE
+** To store the usage analytics of labs running on non-openedx platform      
+     :PROPERTIES:
+     :CUSTOM_ID: non-openedx-usage
+     :END: 
+     Design to store the usage analytics of labs running on non-openedx
+     platform and each lab's analytics are identified by =date= and =lab_id=
+
+    - index ::
+               vlabs
+    - type ::
+              nonopenedx_usage
+    - id :: 
+            <labid>_<yyyy-mm-dd> (to identify the lab analytics by date)
+
+    - document ::
+
+       #+BEGIN_EXAMPLE
+       {
+           "lab_id": "ccnsb04",
+           "lab_name" : "Quantum Chemistry",
+           "institute_name" : "IIIT Hyderabad",
+           "discipline_name" : "Chemical Engineering",
+           "date" : 2017-09-01,
+           "hits" : 200,
+           "visits" : 400,
+           "usage" : 500
+       }
+       #+END_EXAMPLE
+    - Example REST API ::
+
+      #+BEGIN_EXAMPLE
+      http://localhost/vlabs/nonopenedx_usage?ccnsb04_2017-09-01
+      #+END_EXAMPLE
 ** To store the feedback analytics of labs running on Openedx platform.
      :PROPERTIES:
      :CUSTOM_ID: feedback-openedx
      :END: 
      Design to store the feedback analytics of labs running Openedx
-     platform. Every single feedback record is stored as single =json= record.
+     platform. Every feedback record is stored as single =json= record.
 
     - index ::
                vlabs
@@ -165,106 +233,6 @@
 
       #+BEGIN_EXAMPLE
       http://localhost/vlabs/feedback
-      #+END_EXAMPLE
-
-** To store the usage analytics of labs running on openedx aplatform
-     :PROPERTIES:
-     :CUSTOM_ID: openedx-usage
-     :END: 
-     Design to store the usage analytics of labs running Openedx platform
-     
-    - index ::
-               vlabs
-    - type ::
-              openedx_usage
-    - document ::
-
-       #+BEGIN_EXAMPLE
-       {
-           "lab_id": "cse01",
-           "date_of_experiment": "2016-10-19",
-           "student_id": "student",
-           "region": "Telangana",
-           "lab_name": "Data Structures",
-           "experiment_name": "Graph Traversals",
-           "experiment_id": "E99774",
-           "time_of_experiment": "11:06",
-           "ip_address": "14.139.82.6",
-           "discipline_name" : "Computer Science and Engineering",
-           "institute_name" : "IIIT Hyderabad"
-       }
-       #+END_EXAMPLE
-    - Example REST API ::
-
-      #+BEGIN_EXAMPLE
-      http://localhost/vlabs/openedx_usage
-      #+END_EXAMPLE
-** To store the usage analytics of labs running on non-openedx platform      
-     :PROPERTIES:
-     :CUSTOM_ID: non-openedx-usage
-     :END: 
-     Design to store the usage analytics of labs running on non-openedx
-     platform and each lab's analytics are identified by =date= and =lab_id=
-
-    - index ::
-               vlabs
-    - type ::
-              nonopenedx_usage
-    - id :: 
-            <labid>_<yyyy-mm-dd> (to identify the lab analytics by date)
-
-    - document ::
-
-       #+BEGIN_EXAMPLE
-       {
-           "lab_id": "ccnsb04",
-           "lab_name" : "Quantum Chemistry",
-           "institute_name" : "IIIT Hyderabad",
-           "discipline_name" : "Chemical Engineering",
-           "date" : 2017-09-01,
-           "hits" : 200,
-           "visits" : 400,
-           "usage" : 500
-       }
-       #+END_EXAMPLE
-    - Example REST API ::
-
-      #+BEGIN_EXAMPLE
-      http://localhost/vlabs/nonopenedx_usage?ccnsb04_2017-09-01
-      #+END_EXAMPLE
-
-** To store the details of the college running college cloud platform
-     :PROPERTIES:
-     :CUSTOM_ID: college-cloud
-     :END: 
-     Design to store the college's details where college cloud platform is
-     installed. Each college is identified by the =mac_address= of the machine
-     which is running college cloud platform
-     
-    - index ::
-               college_cloud
-    - type ::
-              details
-    - id :: 
-            <mac_addr>
-    - document ::
-
-      #+BEGIN_EXAMPLE
-      {
-        "college_address": "Waknaghat,solan",
-        "email_id": "sample@gmail.com",
-        "college_pincode": "173234",
-        "contact_no": "9999999999",
-        "mac_addr": "70:54:d2:7b:3d:36",
-        "contact_name": "Geetanjali",
-        "college_name": "juit"
-      }
-      #+END_EXAMPLE
-
-    - Example REST API ::
-
-      #+BEGIN_EXAMPLE
-      http://localhost/college_cloud/details/98:40:bb:46:1d:58
       #+END_EXAMPLE
 
 ** To store the feedback analytics of labs running on college cloud platform
@@ -357,6 +325,40 @@
       http://localhost/college_cloud/jntu_98:40:bb:46:1d:58_feedback
       #+END_EXAMPLE
 
+** To store the details of the college running college cloud platform
+     :PROPERTIES:
+     :CUSTOM_ID: college-cloud
+     :END: 
+     Design to store the college's details where college cloud platform is
+     installed. Each college is identified by the =mac_address= of the machine
+     which is running college cloud platform
+     
+    - index ::
+               college_cloud
+    - type ::
+              details
+    - id :: 
+            <mac_addr>
+    - document ::
+
+      #+BEGIN_EXAMPLE
+      {
+        "college_address": "Waknaghat,solan",
+        "email_id": "sample@gmail.com",
+        "college_pincode": "173234",
+        "contact_no": "9999999999",
+        "mac_addr": "70:54:d2:7b:3d:36",
+        "contact_name": "Geetanjali",
+        "college_name": "juit"
+      }
+      #+END_EXAMPLE
+
+    - Example REST API ::
+
+      #+BEGIN_EXAMPLE
+      http://localhost/college_cloud/details/98:40:bb:46:1d:58
+      #+END_EXAMPLE
+
 ** To store the usage analytics of labs running on college cloud platform   
      :PROPERTIES:
      :CUSTOM_ID: college-cloud-usage
@@ -378,7 +380,9 @@
            "region": "Telangana",
            "lab_name": "Data Structures",
            "institute_name" : "IIIT Hyderabad",
+           "institute_id" : "iiith",
            "discipline_name" : "Computer Science and Engineering",
+           "discipline_id" : "cse",
            "experiment_name": "Graph Traversals",
            "experiment_id": "e99774",
            "time_of_experiment": "11:06",
@@ -391,7 +395,7 @@
       #+BEGIN_EXAMPLE
       http://localhost/college_cloud/jntu_98:40:bb:46:1d:58_usage
       #+END_EXAMPLE
-** To store the user session analytics of Virtual Labs Website (on openedx platform)
+** To store the user session analytics of Virtual Labs Website (of Openedx platform)
 
      :PROPERTIES:
      :CUSTOM_ID: user-analytics-vlabs
@@ -441,7 +445,7 @@
       http://localhost/vlabs/openedx_user_session_analytics_2017-08-20
       #+END_EXAMPLE
 
-** To store the user analytics of Virtual Labs Website (on openedx platform)
+** To store the user analytics of Virtual Labs Website (of Openedx platform)
 
      :PROPERTIES:
      :CUSTOM_ID: user-analytics-vlabs
@@ -494,6 +498,7 @@
 
        #+BEGIN_EXAMPLE
        {
+         "date" : "2017-09-18",
          "current_logged_in_users" : 20,
          "total_registered_users" : 100
        }
@@ -506,29 +511,29 @@
       #+END_EXAMPLE
 
 * Security
-  Security for REST APIs of =elasticsearch= database service is designed as
-  follows
+  Security for REST APIs of =analytics-db= (i.e elasticsearch) database service
+  is designed as follows
 
     + GET ::
-             Anyone from outside world can make GET requests to =elasticsearch=
+             Anyone from outside world can make GET requests to =analytics-db=
              database service APIs without any authentication
 
     + PUT, POST and DELETE :: 
-                             Only domain =vlabs.ac.in= or sub domains
-         =*.vlabs.ac.in= are allowed to make =PUT=, =POST= and =DELETE= requests
-         providing valid =user= and =password= credentials.
+             Only domain =vlabs.ac.in= or sub domains
+             =*.vlabs.ac.in= are allowed to make =PUT=, =POST= and =DELETE= requests
+             providing valid =user= and =password= credentials.
          
 * Design
 #+BEGIN_HTML
 <img src="https://docs.google.com/drawings/d/e/2PACX-1vQGLwlCDUKU2l0IIfLAoIw4-kjZsy6ozoDT5Rm8um3iSYehVuJvvu-qd0szYvLo7stZqiQ-2yKH9dr8/pub?w=960&h=720">
-<p align="center"> Analytics Database Security </p>
+<p align="center"> Analytics Database Service Security </p>
 #+END_HTML
-To edit the feedback relations image click [[https://docs.google.com/drawings/d/11GDV3JOzpr-CtfI_6r1BmP1xnuXBu0ty5x9Kzq68sJo/edit][here]]
+To edit the analytics database service image click [[https://docs.google.com/drawings/d/11GDV3JOzpr-CtfI_6r1BmP1xnuXBu0ty5x9Kzq68sJo/edit][here]]
 
   Above design illustrates the following
   - Only domain =vlabs.ac.in= or sub-domains =*.vlabs.ac.in= can make GET, PUT,
-    POST and DELETE requests to =elasticsearch= database service APIs.
-  - Other domains only can make =GET= requests to =elasticsearch= database
+    POST and DELETE requests to =analytics-db= database service APIs.
+  - Other domains only can make =GET= requests to =analytics-db= database
     service APIs
     
 

@@ -7,8 +7,8 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This document illustrate the requirements to design the database for
-  analytics database service for Virtual Labs
+  This document illustrate the requirements to design the database model for
+  storing/retrieval of Analytics of Virtual Labs platform.
 
 * Requirements
   :PROPERTIES:

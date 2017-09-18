@@ -1,7 +1,7 @@
 * Analytics Database Service
 ** Introduction
-  - This repository contains the design model to setup & run the analytics
-    database service (i.e elasticsearch) for Virtual Labs
-** Run application on development environment
-  - To run the analytics database service on development environment please use
-    [[https://github.com/vlead/analytics-db/blob/refactor/src/deployment/index.org#introduction][documentation]]
+   This repository contains the database design and model to store/retrieve
+   Analytics of Virtual Labs
+** Run service on development environment
+   To run the Analytics database service on development environment please use
+   [[https://github.com/vlead/analytics-db/blob/refactor/src/deployment/index.org#introduction][documentation]]

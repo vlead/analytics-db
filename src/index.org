@@ -1,4 +1,4 @@
-#+TITLE: Virtual Labs Analytics Database
+#+TITLE: Analytics Database Service for Virtual Labs
 #+AUTHOR: VLEAD
 #+DATE: [2017-08-26 Tue]
 #+SETUPFILE: ./org-templates/level-0.org
@@ -7,13 +7,15 @@
 #+OPTIONS: ^:nil
 
 * Version/Branch History
-
+  =v0.0.1=
 * Application
 
-  The purpose of setting up =NoSQL= database service (elasticsearch) is to
-  facilitate the storage of user, feedback and usage analytics of Virtual Labs
-  platform and other information in the form of json records. Also to enable
-  end user to querying data in possibilities.
+  1. An Application service (elasticsearch) which uses =NoSQL=
+     database.
+  2. =VLEAD= chosen this service to facilitate the storage/retrieval of user,
+     feedback and usage analytics of Virtual Labs platform and other
+     information in the form of json records.
+  3. Also this service provides APIs to query the data in all possible ways
 
 * Introduction
   This document illustrates the requirements, design and deployement of
@@ -29,5 +31,5 @@
    
 * Tangle                                       :boilerplate:
 #+BEGIN_SRC python :eval no :tangle __init__.py
-print "analytics package"
+print "analytics database service package"
 #+END_SRC
