@@ -184,7 +184,7 @@ def config_string_analyzer(index):
                 }
             }
         }
-    auth = auth(USER, PASSWORD)
+    auth = (USER, PASSWORD)
     r = requests.put(ELASTIC_DB_API, auth=auth, data=json.dumps(data),\
                      headers=headers)
     if r.status_code == 200 or r.status_code == 201:
@@ -322,7 +322,7 @@ def migrate_usage(usages, index, type):
     headers = {'Content-Type': 'application/json'}
     for usage in usages:
         usage_dict['lab_id'] = usage['LAB_ID'].lower()
-        usage_dict['date_of_experiment'] = usage['DATE_OF_EXPERIMENT']
+        usage_dict['date'] = usage['DATE_OF_EXPERIMENT']
         usage_dict['student_id'] = usage['STUDENT_ID']
         usage_dict['region'] = usage['REGION']
         LDS_API = "%s/labs?lab_id=%s" % (LDS_URL, usage_dict['lab_id'])
