@@ -470,6 +470,36 @@ if __name__== "__main__":
 
 #+END_SRC
   
+* Install =elasticdump= utility
+  =elasticdump= is used to migrate the data from one =VM= to another.  This is
+  useful when data needs to be migrated from one environment (staging) to other
+  environment (production). This utility can also be used for local dumping
+  such as exporting data into =.json= ..etc
+
+  1. Install =nodejs= =v4.8.4= and =npm= =v2.15.11=
+     #+BEGIN_EXAMPLE
+     wget -qO- https://deb.nodesource.com/setup_4.x | sudo bash -
+     apt-get install nodejs
+     #+END_EXAMPLE
+  2. Make sure that installed version of =nodejs= and =npm= meets requirement
+     #+BEGIN_EXAMPLE
+     root@localhost:~# nodejs --version
+     v4.8.4
+     root@localhost:~# npm --version
+     2.15.11
+     #+END_EXAMPLE
+  3. Install =elasticdump= using =npm=
+     #+BEGIN_EXAMPLE
+     npm install elasticdump
+     npm install elasticdump -g
+     #+END_EXAMPLE
+  4. Sample commands to migrate data from =localhost= to
+     =analytics-db.vlabs.ac.in=
+     #+BEGIN_EXAMPLE
+     elasticdump --input=http://localhost/index --output=http://user:pswd@analytics-db.vlabs.ac.in/index_copy --type=analyzer
+     elasticdump --input=http://localhost/index --output=http://user:pswd@analytics-db.vlabs.ac.in/index_copy --type=mapping
+     elasticdump --input=http://localhost/index --output=http://user:pswd@analytics-db.vlabs.ac.in/index_copy --type=data
+     #+END_EXAMPLE
 * Important commands for dealing with Elasticsearch database.
   
 *** Start/Stop/Check status of elasticsearch service
