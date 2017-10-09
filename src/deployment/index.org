@@ -253,9 +253,10 @@ if __name__== "__main__":
   3. How to run script ?
      - Configure =ELASTIC_DB_URL=, =USER=, =PASSWORD= and =LDS_URL= variables
      - Get the =backup= file of previous version =v1.0.0=
-     - Run script
+     - Run the script
        #+BEGIN_SRC 
-       python migrate_elastic_db.py <backup_version>.tar.gz
+       cd build/code/deployment
+       python migrate_analytcs_db.py <backup_version>.tar.gz
        #+END_SRC
 
 ** Configuration
@@ -878,6 +879,7 @@ import tarfile
 *** Sources
 #+BEGIN_SRC python :tangle migrate_analytcs_db.py :eval no :noweb yes
 <<imports_for_migration>>
+<<config>>
 <<config_string_analyzer>>
 <<migrate_usage>>
 <<migrate_feedback_records>>
