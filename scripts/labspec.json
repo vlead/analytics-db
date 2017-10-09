@@ -81,7 +81,7 @@
                   "service nginx reload",
                   "update-rc.d elasticsearch defaults",
                   "wget -qO- https://deb.nodesource.com/setup_4.x | sudo bash -",
-                  "apt-get install nodejs",
+                  "apt-get install nodejs -y",
                   "npm install elasticdump -g"
                 ],
                 "lab_actions": {
