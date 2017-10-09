@@ -79,7 +79,10 @@
                   "echo 'network.host: localhost' >>/etc/elasticsearch/elasticsearch.yml",
                   "echo 'script.engine.groovy.inline.aggs: on' >>/etc/elasticsearch/elasticsearch.yml",
                   "service nginx reload",
-                  "update-rc.d elasticsearch defaults"
+                  "update-rc.d elasticsearch defaults",
+                  "wget -qO- https://deb.nodesource.com/setup_4.x | sudo bash -",
+                  "apt-get install nodejs",
+                  "npm install elasticdump -g"
                 ],
                 "lab_actions": {
                     "backup": [],
