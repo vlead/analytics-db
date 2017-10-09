@@ -140,19 +140,30 @@
    firefox http://localhost
    #+END_EXAMPLE
 
-* Backup script for =v0.0.1-alpha=
-   - This script takes the backup of all existing =indexes= in version [[https://github.com/vlead/analytics-db/releases/tag/v1.0.0][v0.0.1-alpha]]
-   - During backup each =index= and its associated =types= data is stored into
-     the =.json= file with naming convention as =index_type.json=
+* Backup script for release of =v1.0.0=
+   - This script takes the backup of all the =indexes= exist in version [[https://github.com/vlead/analytics-db/releases/tag/v1.0.0][v1.0.0]]
+   - During the backup process each =index= and its associated =types= data
+     stored into the =.json= file with naming convention as
+     =<index>_<type>.json=
+   - Also it compress all the =<index>_<type>.json= files into
+     =backup_<version>.tar.gz= file
    - This script will backup the usage analytics from =2016-10-07= to till date
+   - How to run script
+     + Configure =ELASTIC_DB_URL=, =START_DATE=, =END_DATE= and =VERSION=
+       variables
+     + Then run the script
+     #+BEGIN_EXAMPLE
+     python backup.py
+     #+END_EXAMPLE
      
 #+NAME: backup
 #+BEGIN_SRC python
 
-ELASTIC_DB_URL = "http://192.168.33.10"
+ELASTIC_DB_URL = "http://localhost:9200"
 START_DATE = date(2016, 10, 07)
 END_DATE = date(2017, 8, 31)
-VERSION = "v0.0.1-alpha"
+VERSION = "v1.0.0"
+BACKUP_FILE_NAME = "backup_%s.tar.gz" % (VERSION)
 
 file_names = []
 
@@ -187,7 +198,9 @@ def backup():
                                         until=END_DATE):
                             t_date = dt.strftime("%Y-%m-%d")
                             GET_DOCS_API = \
-                              "%s/%s/%s/_search?q=DATE_OF_EXPERIMENT:%s&size=10000" %(ELASTIC_DB_URL, index_name, str(type), t_date)
+                              "%s/%s/%s/_search?q=DATE_OF_EXPERIMENT:%s"+\
+                              "&size=10000" %(ELASTIC_DB_URL, \
+                                              index_name, str(type), t_date)
                             r = requests.get(GET_DOCS_API)
                             if r.status_code == 200:
                                 docs = r.json()['hits']['hits']
@@ -217,23 +230,33 @@ def backup():
             print str(e)
 
 def create_tar_file():
-    tar = tarfile.open(VERSION + ".tar.gz", "w:gz")
-    for name in file_names:
-        tar.add(name)
+    tar = tarfile.open(BACKUP_FILE_NAME, "w:gz")
+    for file_name in file_names:
+        tar.add(file_name)
+        os.system('rm ' + file_name)
     tar.close()
+    
+
 if __name__== "__main__":
     backup()
     create_tar_file()
 
 #+END_SRC
 
-* Script to migrate the analytics-db (i.e elasticsearch) database
+* Migrate database of version =v1.0.0= to =v1.1.0-alpha=
 
-  1. This script restores the data which is obtained in backup as per new
-     analytics-db database [[https://github.com/vlead/analytics-db/blob/refactor/src/design/index.org#design-of-elasticsearch-database][design]].
-  2. During the restore process script contacts [[http://lds.vlabs.ac.in][LDS]] service to make all the
+  1. This script migrates the backup database which is obtained from [[https://github.com/vlead/analytics-db/releases/tag/v1.0.0][=v1.0.0=]]
+     release to new database model [[https://github.com/vlead/analytics-db/blob/refactor/src/design/index.org#design-of-elasticsearch-database][design]] (=v1.1.0-alpha=)
+  2. During the migration process script contacts [[http://lds.vlabs.ac.in][LDS]] service to make all the
      field values such as =lab_name=, =exp_name= ..etc in consistent with =LDS=
      service data
+  3. How to run script ?
+     - Configure =ELASTIC_DB_URL=, =USER=, =PASSWORD= and =LDS_URL= variables
+     - Get the =backup= file of previous version =v1.0.0=
+     - Run script
+       #+BEGIN_SRC 
+       python migrate_elastic_db.py <backup_version>.tar.gz
+       #+END_SRC
 
 ** Function to disable string analyzer
   - Elasticsearch has default settings to analyze a string.  For example see
@@ -257,7 +280,7 @@ import requests
 import json
 import tarfile
 
-ELASTIC_DB_URL = "http://192.168.33.10"
+ELASTIC_DB_URL = "http://localhost"
 USER="username"
 PASSWORD="password"
 LDS_URL = "http://lds.vlabs.ac.in"
