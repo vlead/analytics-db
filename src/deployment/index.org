@@ -314,7 +314,7 @@ def config_string_analyzer(index):
         return False
 
 #+END_SRC
-** Add feedback records
+** Migrate feedback records
 
    - This function adds the feedback =json= records into specified =index= and
      =type=
@@ -349,7 +349,7 @@ def migrate_feedback_records(records, index, type):
 
 #+END_SRC
 
-** Add usage records
+** Migrate usage records
 
    - This function adds the usage =json= records into specified =index= and
      =type=
@@ -424,9 +424,10 @@ def migrate_usage(usages, index, type):
 
 #+END_SRC
 
-** Restore analytics database
-   This function reads all =.json= files which are obtained in backup process
-   and invokes necessary functions to restore them into analytics-db database.
+** Migrate analytics database
+   This function reads all =<index>_<type>.json= files which are obtained from
+   backup file and invokes necessary functions to migrate them into
+   analytics-db database.
 #+NAME: migrate_db
 #+BEGIN_SRC python
 def migrate(file_names):
@@ -513,9 +514,11 @@ if __name__== "__main__":
 
     import sys
     import os
+
     if len(sys.argv) != 2:
         print "Invalid number of arguments"
         exit(1)
+
     backup_file = sys.argv[1]
     os.system("tar xvf " + backup_file)
     file_names = []
