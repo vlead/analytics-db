@@ -13,5 +13,7 @@
      #+END_EXAMPLE
    - Enter the password when it prompts for the given =username=
    - Document =username= and =password= for future reference.
-    
+*** Run database migration script
+   - Follow [[https://github.com/vlead/analytics-db/blob/develop/src/deployment/index.org#migrate-database-of-version-v100-to-v110-alpha][documentation]] to migrate the database of previous release
+     =v1.0.0=
 

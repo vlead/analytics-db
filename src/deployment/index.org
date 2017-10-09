@@ -258,7 +258,21 @@ if __name__== "__main__":
        python migrate_elastic_db.py <backup_version>.tar.gz
        #+END_SRC
 
+** Configuration
+   #+NAME: config
+   #+BEGIN_SRC python
+
+   ELASTIC_DB_URL = "http://localhost"
+   USER="username"
+   PASSWORD="password"
+   LDS_URL = "http://lds.vlabs.ac.in"
+
+   auth = (USER, PASSWORD)
+
+   #+END_SRC
+
 ** Function to disable string analyzer
+
   - Elasticsearch has default settings to analyze a string.  For example see
     the example document given below
     #+BEGIN_EXAMPLE
@@ -276,16 +290,6 @@ if __name__== "__main__":
 
 #+NAME: config_string_analyzer
 #+BEGIN_SRC python
-import requests
-import json
-import tarfile
-
-ELASTIC_DB_URL = "http://localhost"
-USER="username"
-PASSWORD="password"
-LDS_URL = "http://lds.vlabs.ac.in"
-
-auth = (USER, PASSWORD)
 
 def config_string_analyzer(index):
     headers = {'Content-Type': 'application/json'}
@@ -311,11 +315,13 @@ def config_string_analyzer(index):
 
 #+END_SRC
 ** Add feedback records
+
    - This function adds the feedback =json= records into specified =index= and
      =type=
    - Also it disables the string analyzer
 #+NAME: migrate_feedback_records
 #+BEGIN_SRC python
+
 def migrate_feedback_records(records, index, type):
     state = config_string_analyzer(index)
     count = 0
@@ -344,6 +350,7 @@ def migrate_feedback_records(records, index, type):
 #+END_SRC
 
 ** Add usage records
+
    - This function adds the usage =json= records into specified =index= and
      =type=
    - Also it disables the string analyzer
@@ -352,6 +359,7 @@ def migrate_feedback_records(records, index, type):
 
 #+NAME: migrate_usage
 #+BEGIN_SRC python
+
 def migrate_usage(usages, index, type):
     state = config_string_analyzer(index)
     count = 0
@@ -502,6 +510,7 @@ def migrate(file_names):
 #+NAME: main
 #+BEGIN_SRC python
 if __name__== "__main__":
+
     import sys
     import os
     if len(sys.argv) != 2:
@@ -843,8 +852,8 @@ if __name__== "__main__":
 
 * Tangle                                                        :boilerplate:
 *** Imports 
-
-#+NAME: imports
+**** Backup    
+#+NAME: imports_for_backup
 #+BEGIN_SRC python
 
 import requests
@@ -852,10 +861,20 @@ import json
 from datetime import datetime, timedelta, date
 from dateutil.rrule import rrule, DAILY
 import tarfile
+
+#+END_SRC
+**** Migration
+#+NAME: imports_for_migration
+#+BEGIN_SRC python
+
+import requests
+import json
+import tarfile
+
 #+END_SRC
 *** Sources
 #+BEGIN_SRC python :tangle migrate_analytcs_db.py :eval no :noweb yes
-
+<<imports_for_migration>>
 <<config_string_analyzer>>
 <<migrate_usage>>
 <<migrate_feedback_records>>
@@ -865,7 +884,7 @@ import tarfile
 #+END_SRC
 #+BEGIN_SRC python :tangle backup.py :eval no :noweb yes
 
-<<imports>>
+<<imports_for_backup>>
 <<backup>>
 
 #+END_SRC
