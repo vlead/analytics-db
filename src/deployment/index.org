@@ -480,10 +480,12 @@ def migrate(file_names):
 #+BEGIN_SRC python
 if __name__== "__main__":
     import sys
-    if len(sys.argv) != 3:
+    import os
+    if len(sys.argv) != 2:
         print "Invalid number of arguments"
         exit(1)
     backup_file = sys.argv[1]
+    os.system("tar xvf " + backup_file)
     file_names = []
     tar_files = tarfile.open(backup_file, "r:gz")
     for tar_file in tar_files:
