@@ -68,7 +68,7 @@
                   "apt-get install software-properties-common python-software-properties -y",
                   "apt-add-repository ppa:webupd8team/java -y",
                   "apt-get update -y",
-                  "echo 'oracle-java8-installer shared/accepted-oracle-license-v1-1 select true' | sudo debconf-set-selections",
+                  "echo 'oracle-java8-installer shared/accepted-oracle-license-v1-1 select true' | debconf-set-selections",
                   "apt-get install oracle-java8-installer -y",
                   "wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.2.deb && dpkg -i elasticsearch-1.7.2.deb",
                   "apt-get install nginx -y",
@@ -80,7 +80,7 @@
                   "echo 'script.engine.groovy.inline.aggs: on' >>/etc/elasticsearch/elasticsearch.yml",
                   "service nginx reload",
                   "update-rc.d elasticsearch defaults",
-                  "wget -qO- https://deb.nodesource.com/setup_4.x | sudo bash -",
+                  "wget -qO- https://deb.nodesource.com/setup_4.x | bash -",
                   "apt-get install nodejs -y",
                   "npm install elasticdump -g"
                 ],
