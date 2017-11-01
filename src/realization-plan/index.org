@@ -17,7 +17,7 @@
   |   | S. | Mi | Req | Milestone          | Plan | Status | Est | Act | Issues |
   |   | no | no | Map |                    |      |        | hrs | hrs |        |
   |---+----+----+-----+--------------------+------+--------+-----+-----+--------|
-  |   |  1 | [[ADS deployment and implementation of backup restore scripthttps://github.com/vlead/analytics-db/milestone/1][2]]  |     | [[https://github.com/vlead/analytics-db/milestone/2][Service deployment]] |      | Closed | 104 | 132 | [[https://github.com/vlead/analytics-db/milestones/ADS%2520deployment%2520and%2520implementation%2520of%2520backup%2520restore%2520script][ref]]    |
+  |   |  1 | [[https://github.com/vlead/analytics-db/milestone/2][2]]  |     | [[https://github.com/vlead/analytics-db/milestone/2][Service deployment]] |      | Closed | 104 | 132 | [[https://github.com/vlead/analytics-db/milestones/ADS%2520deployment%2520and%2520implementation%2520of%2520backup%2520restore%2520script][ref]]    |
   |---+----+----+-----+--------------------+------+--------+-----+-----+--------|
   |   |  2 | [[https://github.com/vlead/lab-data-service/milestone/1][1]]  |     | [[https://github.com/vlead/analytics-db/milestone/1][Define data-model]]  |      | Closed | 146 | 167 | [[https://github.com/vlead/analytics-db/milestones/define%2520database%2520model%2520and%2520caputre%2520the%2520design][ref]]    |
   |---+----+----+-----+--------------------+------+--------+-----+-----+--------|
