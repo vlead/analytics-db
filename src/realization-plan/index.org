@@ -1,0 +1,141 @@
+#+TITLE: Plan for Analytics Database
+#+AUTHOR: VLEAD
+#+DATE: [2017-11-01 Wed]
+#+PROPERTY: results output
+#+PROPERTY: exports code
+#+SETUPFILE: ../org-templates/level-1.org
+#+options: ^:nil
+#+LATEX: Literal LaTeX code for export
+
+* Introduction
+  This document contains the realization plan for
+  implementing the analytics database.  This application is
+  realized as series of [[https://github.com/vlead/analytics-db/milestones?state=closed][milestones]].
+
+* Milestones Snapshot
+  |---+----+----+-----+--------------------+------+--------+-----+-----+--------|
+  |   | S. | Mi | Req | Milestone          | Plan | Status | Est | Act | Issues |
+  |   | no | no | Map |                    |      |        | hrs | hrs |        |
+  |---+----+----+-----+--------------------+------+--------+-----+-----+--------|
+  |   |  1 | [[ADS deployment and implementation of backup restore scripthttps://github.com/vlead/analytics-db/milestone/1][2]]  |     | [[https://github.com/vlead/analytics-db/milestone/2][Service deployment]] |      | Closed | 104 | 132 | [[https://github.com/vlead/analytics-db/milestones/ADS%2520deployment%2520and%2520implementation%2520of%2520backup%2520restore%2520script][ref]]    |
+  |---+----+----+-----+--------------------+------+--------+-----+-----+--------|
+  |   |  2 | [[https://github.com/vlead/lab-data-service/milestone/1][1]]  |     | [[https://github.com/vlead/analytics-db/milestone/1][Define data-model]]  |      | Closed | 146 | 167 | [[https://github.com/vlead/analytics-db/milestones/define%2520database%2520model%2520and%2520caputre%2520the%2520design][ref]]    |
+  |---+----+----+-----+--------------------+------+--------+-----+-----+--------|
+  |   |    |    |     | Total              |      |        | 250 | 299 |        |
+  | ^ |    |    |     |                    |      |        |  et |  at |        |
+  |---+----+----+-----+--------------------+------+--------+-----+-----+--------|
+  #+TBLFM: $2=@#-2
+  #+TBLFM: @3$8=remote(tbl-rlz-pln-ml-2, $est)
+  #+TBLFM: @3$9=remote(tbl-rlz-pln-ml-2, $act)
+  #+TBLFM: @4$8=remote(tbl-rlz-pln-ml-1, $est)
+  #+TBLFM: @4$9=remote(tbl-rlz-pln-ml-1, $act)
+  #+TBLFM: $et=vsum(@II+1..@-1)
+  #+TBLFM: $at=vsum(@II+1..@-1)
+
+* Detailed Plans
+** ADS deployment and implementation of backup restore script
+
+   This [[https://github.com/vlead/analytics-db/milestone/2][milestone]] includes the following features:
+   1. Write backup and restore scripts
+   2. Deploy service using ADS
+   3. Documentation for setting up dev environment
+  
+ #+caption:  realization-plan
+ #+name: tbl-rlz-pln-ml-2
+ |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    S. | Tasks                       | Github | Est    | Act    | Est    | Act    | Status | Assignee |
+ |    NO |                             | Issues | Effort | Effort | Start, | Start/ |        |          |
+ |       |                             |        | (in    | (in    | End    | End    |        |          |
+ |       |                             |        | person | person | Dates  | Dates  |        |          |
+ |       |                             |        | hours) | hours) |        |        |        |          |
+ |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    1. | Backup and restore          | [[https://github.com/vlead/lab-data-service/issues/92][#92]]    | 24     | 32     |        |        | Done   | Sripathi |
+ |       | scripts to be written       |        |        |        |        |        |        |          |
+ |       | for elastic search          |        |        |        |        |        |        |          |
+ |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    2. | migrate elasticsearch       | [[https://github.com/vlead/analytics-db/issues/21][#21]]    | 16     | 24     |        |        | Done   | Sripathi |
+ |       | database with no production |        |        |        |        |        |        |          |
+ |       | downtime                    |        |        |        |        |        |        |          |
+ |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    3. | Making elasticsearch        | [[https://github.com/vlead/analytics-db/issues/8][#8]]     | 32     | 36     |        |        | Done   | Sripathi |
+ |       | service ADS deployable      |        |        |        |        |        |        |          |
+ |       |                             |        |        |        |        |        |        |          |
+ |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    4. | Things to be done for       | [[https://github.com/vlead/analytics-db/issues/19][#19]]    | 32     | 40     |        |        | Done   | Sripathi |
+ |       | release v0.0.1              |        |        |        |        |        |        |          |
+ |       |                             |        |        |        |        |        |        |          |
+ |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ | Total |                             |        | 104    | 132    |        |        |        |          |
+ |     ^ |                             |        | est    | act    |        |        |        |          |
+ |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ #+TBLFM: $estimated=vsum(@II+1..@-1)
+ #+TBLFM: $actual=vsum(@II+1..@-1)
+
+** Define database model
+
+   This [[https://github.com/vlead/analytics-db/milestone/1][milestone]] includes the following features:
+
+   1. REST API(s) interfaces to store/retrieve the JSON
+      records
+   2. User level API documentation
+   3. Security implementation
+  
+ #+caption:  realization-plan
+ #+name: tbl-rlz-pln-ml-1
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    S. | Tasks                      | Github |    Est |    Act | Est    | Act    | Status | Assignee |
+ |    NO |                            | Issues | Effort | Effort | Start, | Start/ |        |          |
+ |       |                            |        |    (in |    (in | End    | End    |        |          |
+ |       |                            |        | person | person | Dates  | Dates  |        |          |
+ |       |                            |        | hours) | hours) |        |        |        |          |
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    1. | Error in executing yes     | [[https://github.com/vlead/analytics-db/issues/19][#19]]    |      2 |      3 |        |        | Done   | Sripathi |
+ |       | sudo apt-add-repository    |        |        |        |        |        |        |          |
+ |       | ppa:webupd8team/java' cmd  |        |        |        |        |        |        |          |
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    2. | convert usage analytics    | [[https://github.com/vlead/analytics-db/issues/19][#19]]    |     12 |     16 |        |        | Done   | Sripathi |
+ |       | txt data to json records   |        |        |        |        |        |        |          |
+ |       | before dump into           |        |        |        |        |        |        |          |
+ |       | elasticsearch              |        |        |        |        |        |        |          |
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    3. | Security for elasticsearch | [[https://github.com/vlead/analytics-db/issues/19][#19]]    |     16 |     18 |        |        | Done   | Sripathi |
+ |       | REST APIs                  |        |        |        |        |        |        |          |
+ |       |                            |        |        |        |        |        |        |          |
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    4. | Define requirements and    | [[https://github.com/vlead/analytics-db/issues/19][#19]]    |     32 |     36 |        |        | Done   | Sripathi |
+ |       | design for vlead           |        |        |        |        |        |        |          |
+ |       | analytics db service       |        |        |        |        |        |        |          |
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    5. | Migration script to        | [[https://github.com/vlead/analytics-db/issues/19][#19]]    |     32 |     40 |        |        | Done   | Sripathi |
+ |       | reflect new design of      |        |        |        |        |        |        |          |
+ |       | elasticsearch database     |        |        |        |        |        |        |          |
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    6. | rename elk-stack-for       | [[https://github.com/vlead/analytics-db/issues/19][#19]]    |      1 |      1 |        |        | Done   | Sripathi |
+ |       | analytics to analytics-db  |        |        |        |        |        |        |          |
+ |       |                            |        |        |        |        |        |        |          |
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    7. | vlabs-analytics vm is      | [[https://github.com/vlead/analytics-db/issues/19][#19]]    |      1 |      1 |        |        | Done   | Sripathi |
+ |       | running out of disk space  |        |        |        |        |        |        |          |
+ |       |                            |        |        |        |        |        |        |          |
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    8. | Automate java8 installer   | [[https://github.com/vlead/analytics-db/issues/19][#19]]    |      4 |      2 |        |        | Done   | Sripathi |
+ |       | using bash                 |        |        |        |        |        |        |          |
+ |       |                            |        |        |        |        |        |        |          |
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |    9. | Integrate usage            | [[https://github.com/vlead/analytics-db/issues/19][#19]]    |     18 |     18 |        |        | Done   | Sripathi |
+ |       | analytics to LDS           |        |        |        |        |        |        |          |
+ |       |                            |        |        |        |        |        |        |          |
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |   10. | Document steps to          | [[https://github.com/vlead/analytics-db/issues/19][#19]]    |     12 |     16 |        |        | Done   | Sripathi |
+ |       | run analytcs-db            |        |        |        |        |        |        |          |
+ |       | service on dev environment |        |        |        |        |        |        |          |
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ |   11. | Disable string analyzer    | [[https://github.com/vlead/analytics-db/issues/19][#19]]    |     16 |     16 |        |        | Done   | Sripathi |
+ |       | in elasticsearch           |        |        |        |        |        |        |          |
+ |       |                            |        |        |        |        |        |        |          |
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ | Total |                            |        |    146 |    167 |        |        |        |          |
+ |     ^ |                            |        |    est |    act |        |        |        |          |
+ |-------+----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ #+TBLFM: $est=vsum(@II+1..@-1)
+ #+TBLFM: $act=vsum(@II+1..@-1)
