@@ -91,7 +91,7 @@
         location / {
         limit_except GET {
           allow   192.168.33.1/24;
-          allow   127.0.0.1/24;
+          allow   127.0.0.1;
           deny    all;    
           auth_basic           "Login required";
           auth_basic_user_file /etc/nginx/.htpasswd;
@@ -140,71 +140,31 @@
    firefox http://localhost
    #+END_EXAMPLE
 
-* Script to migrate the analytics-db (i.e elasticsearch) database
-  
-  1. This script takes the backup of all existing =indexes= in version [[https://github.com/vlead/analytics-db/releases/tag/v1.0.0][v1.0.0]]
-  2. During backup each =index= and its associated =types= data is stored into
-     the =.json= file with naming convention as =index_type.json=
-  3. This script also restores the data which is obtained in step(1) as per new
-     analytics-db database [[https://github.com/vlead/analytics-db/blob/refactor/src/design/index.org#design-of-elasticsearch-database][design]].
-  4. During the restore process script contacts [[http://lds.vlabs.ac.in][LDS]] service to make all the
-     field values such as =lab_name=, =exp_name= ..etc in consistent with =LDS=
-     service data
-
-** Function to disable string analyzer
-  - Elasticsearch has default settings to analyze a string.  For example see
-    the example document given below
-    #+BEGIN_EXAMPLE
-    {
-    "name" : "Sripathi Kammari",
-    "age" : "24" 
-    }
-    #+END_EXAMPLE
-
-  - When search queries executed, you see different values for "Sripathi" and
-    "Kammari" even though it is a single value assigned to "name" key.
-
-  - To Override this default behavior, custom settings are done while before
-    creating an index.
-
-#+NAME: config_string_analyzer
-#+BEGIN_SRC python
-            
-def config_string_analyzer(index):
-    headers = {'Content-Type': 'application/json'}
-    ELASTIC_DB_API = "%s/%s" % (ELASTIC_DB_URL, index)
-    data = {
-        "index" : {
-            "analysis" : {
-                "analyzer" : {
-                    "default" : {
-                        "type" : "keyword"
-                        }
-                    }
-                }
-            }
-        }
-    auth = auth(USER, PASSWORD)
-    r = requests.put(ELASTIC_DB_API, auth=auth, data=json.dumps(data),\
-                     headers=headers)
-    if r.status_code == 200 or r.status_code == 201:
-        return True
-    else:
-        return False
-   
-
-#+END_SRC
-** Function to backup the analytics-db database
-   - This script takes the backup of all existing =indexes= in version [[https://github.com/vlead/analytics-db/releases/tag/v1.0.0][v1.0.0]]
-   - During backup each =index= and its associated =types= data is stored into
-     the =.json= file with naming convention as =index_type.json=
+* Backup script for release of =v1.0.0=
+   - This script takes the backup of all the =indexes= exist in version [[https://github.com/vlead/analytics-db/releases/tag/v1.0.0][v1.0.0]]
+   - During the backup process each =index= and its associated =types= data
+     stored into the =.json= file with naming convention as
+     =<index>_<type>.json=
+   - Also it compress all the =<index>_<type>.json= files into
+     =backup_<version>.tar.gz= file
    - This script will backup the usage analytics from =2016-10-07= to till date
-
+   - How to run script
+     + Configure =ELASTIC_DB_URL=, =START_DATE=, =END_DATE= and =VERSION=
+       variables
+     + Then run the script
+     #+BEGIN_EXAMPLE
+     python backup.py
+     #+END_EXAMPLE
+     
 #+NAME: backup
 #+BEGIN_SRC python
 
-ELASTIC_DB_URL = "http://192.168.33.10"
-LDS_URL = "http://lds.vlabs.ac.in"
+ELASTIC_DB_URL = "http://localhost:9200"
+START_DATE = date(2016, 10, 07)
+END_DATE = date(2017, 8, 31)
+VERSION = "v1.0.0"
+BACKUP_FILE_NAME = "backup_%s.tar.gz" % (VERSION)
+
 file_names = []
 
 def backup():
@@ -217,7 +177,7 @@ def backup():
             indexes = r.json()
         else:
             print "Failed to get index lists"
-            
+
     except Exception as e:
         print str(e)
 
@@ -233,14 +193,14 @@ def backup():
                     temp = []
 
                     if index_name == "vlabs" and type == "usage":
-                        
-                        start_date = date(2016, 10, 07)
-                        end_date = date(2017, 8, 31)
-                        for dt in rrule(DAILY, dtstart=start_date, \
-                                        until=end_date):
+
+                        for dt in rrule(DAILY, dtstart=START_DATE, \
+                                        until=END_DATE):
                             t_date = dt.strftime("%Y-%m-%d")
                             GET_DOCS_API = \
-                              "%s/%s/%s/_search?\q=DATE_OF_EXPERIMENT:%s&size=10000" %(ELASTIC_DB_URL, index_name, str(type), t_date)
+                              "%s/%s/%s/_search?q=DATE_OF_EXPERIMENT:%s"+\
+                              "&size=10000" %(ELASTIC_DB_URL, \
+                                              index_name, str(type), t_date)
                             r = requests.get(GET_DOCS_API)
                             if r.status_code == 200:
                                 docs = r.json()['hits']['hits']
@@ -268,28 +228,114 @@ def backup():
 
         except Exception as e:
             print str(e)
+
+def create_tar_file():
+    tar = tarfile.open(BACKUP_FILE_NAME, "w:gz")
+    for file_name in file_names:
+        tar.add(file_name)
+        os.system('rm ' + file_name)
+    tar.close()
+    
+
+if __name__== "__main__":
+    backup()
+    create_tar_file()
+
 #+END_SRC
-** Add feedback records
+
+* Migrate database of version =v1.0.0= to =v1.1.0-alpha=
+
+  1. This script migrates the backup database which is obtained from [[https://github.com/vlead/analytics-db/releases/tag/v1.0.0][=v1.0.0=]]
+     release to new database model [[https://github.com/vlead/analytics-db/blob/refactor/src/design/index.org#design-of-elasticsearch-database][design]] (=v1.1.0-alpha=)
+  2. During the migration process script contacts [[http://lds.vlabs.ac.in][LDS]] service to make all the
+     field values such as =lab_name=, =exp_name= ..etc in consistent with =LDS=
+     service data
+  3. How to run script ?
+     - Configure =ELASTIC_DB_URL=, =USER=, =PASSWORD= and =LDS_URL= variables
+     - Get the =backup= file of previous version =v1.0.0=
+     - Run the script
+       #+BEGIN_SRC 
+       cd build/code/deployment
+       python migrate_analytcs_db.py <backup_version>.tar.gz
+       #+END_SRC
+
+** Configuration
+ #+NAME: config
+ #+BEGIN_SRC python
+
+ ELASTIC_DB_URL = "http://localhost"
+ USER="username"
+ PASSWORD="password"
+ LDS_URL = "http://lds.vlabs.ac.in"
+
+ auth = (USER, PASSWORD)
+
+   #+END_SRC
+
+** Function to disable string analyzer
+
+  - Elasticsearch has default settings to analyze a string.  For example see
+    the example document given below
+    #+BEGIN_EXAMPLE
+    {
+    "name" : "Sripathi Kammari",
+    "age" : "24" 
+    }
+    #+END_EXAMPLE
+
+  - When search queries executed, you see different values for "Sripathi" and
+    "Kammari" even though it is a single value assigned to "name" key.
+
+  - To Override this default behavior, custom settings are done while before
+    creating an index.
+
+#+NAME: config_string_analyzer
+#+BEGIN_SRC python
+
+def config_string_analyzer(index):
+    headers = {'Content-Type': 'application/json'}
+    ELASTIC_DB_API = "%s/%s" % (ELASTIC_DB_URL, index)
+    data = {
+        "index" : {
+            "analysis" : {
+                "analyzer" : {
+                    "default" : {
+                        "type" : "keyword"
+                        }
+                    }
+                }
+            }
+        }
+
+    r = requests.put(ELASTIC_DB_API, auth=auth, data=json.dumps(data),\
+                     headers=headers)
+    if r.status_code == 200 or r.status_code == 201:
+        return True
+    else:
+        return False
+
+#+END_SRC
+** Migrate feedback records
+
    - This function adds the feedback =json= records into specified =index= and
      =type=
    - Also it disables the string analyzer
 #+NAME: migrate_feedback_records
 #+BEGIN_SRC python
-            
+
 def migrate_feedback_records(records, index, type):
     state = config_string_analyzer(index)
-    if (not state):
-        print "Failed to disable string analyzer"
-        exit()
     count = 0
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
     headers = {'Content-Type': 'application/json'}
     for record in records:
         if 'mac_addr' in record:
-            ELASTIC_DB_API = "%s/%s/%s/%s" % (ELASTIC_DB_URL, index, type, record['mac_addr'])
+            ELASTIC_DB_API = "%s/%s/%s/%s" % \
+              (ELASTIC_DB_URL, index, type, record['mac_addr'])
 
         try:
-            r = requests.post(ELASTIC_DB_API, data=json.dumps(record), headers=headers)
+            r = requests.post(ELASTIC_DB_API, auth=auth, \
+                              data=json.dumps(record), headers=headers)
             if r.status_code == 201:
                 count = count + 1
                 print "************************************"
@@ -301,9 +347,11 @@ def migrate_feedback_records(records, index, type):
 
         except Exception as e:
             print str(e)
+
 #+END_SRC
 
-** Add usage records
+** Migrate usage records
+
    - This function adds the usage =json= records into specified =index= and
      =type=
    - Also it disables the string analyzer
@@ -315,16 +363,13 @@ def migrate_feedback_records(records, index, type):
 
 def migrate_usage(usages, index, type):
     state = config_string_analyzer(index)
-    if (not state):
-        print "Failed to disable string analyzer"
-        exit()
     count = 0
     ELASTIC_DB_API = "%s/%s/%s" % (ELASTIC_DB_URL, index, type)
     usage_dict = {}
     headers = {'Content-Type': 'application/json'}
     for usage in usages:
         usage_dict['lab_id'] = usage['LAB_ID'].lower()
-        usage_dict['date_of_experiment'] = usage['DATE_OF_EXPERIMENT']
+        usage_dict['date'] = usage['DATE_OF_EXPERIMENT']
         usage_dict['student_id'] = usage['STUDENT_ID']
         usage_dict['region'] = usage['REGION']
         LDS_API = "%s/labs?lab_id=%s" % (LDS_URL, usage_dict['lab_id'])
@@ -346,7 +391,7 @@ def migrate_usage(usages, index, type):
 
         except Exception as e:
             print str(e)
-            
+
         usage_dict['experiment_id'] = usage['EXPERIMENT_ID'].lower()
         LDS_API = "%s/experiments?exp_id=%s" % (LDS_URL, usage_dict['experiment_id'])
 
@@ -363,28 +408,30 @@ def migrate_usage(usages, index, type):
         usage_dict['ip_address'] = usage['IP_ADDRESS']
 
         try:
-            r = requests.post(ELASTIC_DB_API, data=json.dumps(usage_dict), headers=headers)
+            r = requests.post(ELASTIC_DB_API, auth=auth, \
+                              data=json.dumps(usage_dict), headers=headers)
             if r.status_code == 201:
                 count = count + 1
                 print "************************************"
                 print ELASTIC_DB_API
                 print "Added record %s/%s" % (count, len(usages))
-                print "************************************"            
+                print "************************************"
 
             else:
                 print "failed to add usage record %s" % (usage_dict)
 
         except Exception as e:
             print str(e)
+
 #+END_SRC
 
-** Restore analytics database
-   This function reads all =.json= files which are obtained in backup process
-   and invokes necessary functions to restore them into analytics-db database.
+** Migrate analytics database
+   This function reads all =<index>_<type>.json= files which are obtained from
+   backup file and invokes necessary functions to migrate them into
+   analytics-db database.
 #+NAME: migrate_db
 #+BEGIN_SRC python
-
-def migrate():
+def migrate(file_names):
 
     for file_name in file_names:
         if file_name == "vlabs_usage.json":
@@ -410,7 +457,7 @@ def migrate():
 
             except Exception as e:
                 print str(e)
-                
+
         if file_name == "matrusri-college_70:54:d2:7b:3d:70_usages.json":
             index = "college_cloud"
             type = "matrusri-college_70:54:d2:7b:3d:70_usage"
@@ -422,7 +469,7 @@ def migrate():
 
             except Exception as e:
                 print str(e)
-                
+
         if file_name == "matrusri-college_70:54:d2:7b:3d:70_feedback.json":
             index = "college_cloud"
             type = "matrusri-college_70:54:d2:7b:3d:70_feedback"
@@ -434,7 +481,7 @@ def migrate():
 
             except Exception as e:
                 print str(e)
-                
+
         if file_name == "juit_70:54:d2:7b:3d:36_feedback.json":
             index = "college_cloud"
             type = "juit_70:54:d2:7b:3d:36_feedback"
@@ -461,16 +508,59 @@ def migrate():
 
 #+END_SRC
 ** Main function
-   This function invokes =backup()= or =migrate()= functions.
+   This function invokes =migrate()= function.
 #+NAME: main
 #+BEGIN_SRC python
 if __name__== "__main__":
-    
-    #backup()
-    #migrate()
+
+    import sys
+    import os
+
+    if len(sys.argv) != 2:
+        print "Invalid number of arguments"
+        exit(1)
+
+    backup_file = sys.argv[1]
+    os.system("tar xvf " + backup_file)
+    file_names = []
+    tar_files = tarfile.open(backup_file, "r:gz")
+    for tar_file in tar_files:
+        file_names.append(tar_file.name)
+        
+    migrate(file_names)
 
 #+END_SRC
   
+* Install =elasticdump= utility
+  =elasticdump= is used to migrate the data from one =VM= to another.  This is
+  useful when data needs to be migrated from one environment (staging) to other
+  environment (production). This utility can also be used for local dumping
+  such as exporting data into =.json= ..etc
+
+  1. Install =nodejs= =v4.8.4= and =npm= =v2.15.11=
+     #+BEGIN_EXAMPLE
+     wget -qO- https://deb.nodesource.com/setup_4.x | sudo bash -
+     apt-get install nodejs
+     #+END_EXAMPLE
+  2. Make sure that installed version of =nodejs= and =npm= meets requirement
+     #+BEGIN_EXAMPLE
+     root@localhost:~# nodejs --version
+     v4.8.4
+     root@localhost:~# npm --version
+     2.15.11
+     #+END_EXAMPLE
+  3. Install =elasticdump= using =npm=
+     #+BEGIN_EXAMPLE
+     npm install elasticdump
+     npm install elasticdump -g
+     #+END_EXAMPLE
+  4. Sample commands to migrate data from =localhost= to
+     =analytics-db.vlabs.ac.in=
+     #+BEGIN_EXAMPLE
+     elasticdump --input=http://localhost/index --output=http://user:pswd@analytics-db.vlabs.ac.in/index_copy --type=analyzer
+     elasticdump --input=http://localhost/index --output=http://user:pswd@analytics-db.vlabs.ac.in/index_copy --type=mapping
+     elasticdump --input=http://localhost/index --output=http://user:pswd@analytics-db.vlabs.ac.in/index_copy --type=data
+     #+END_EXAMPLE
 * Important commands for dealing with Elasticsearch database.
   
 *** Start/Stop/Check status of elasticsearch service
@@ -766,26 +856,40 @@ if __name__== "__main__":
 
 * Tangle                                                        :boilerplate:
 *** Imports 
-
-#+NAME: imports
+**** Backup    
+#+NAME: imports_for_backup
 #+BEGIN_SRC python
 
 import requests
 import json
 from datetime import datetime, timedelta, date
 from dateutil.rrule import rrule, DAILY
+import tarfile
 
 #+END_SRC
+**** Migration
+#+NAME: imports_for_migration
+#+BEGIN_SRC python
 
+import requests
+import json
+import tarfile
+
+#+END_SRC
 *** Sources
 #+BEGIN_SRC python :tangle migrate_analytcs_db.py :eval no :noweb yes
-
-<<imports>>
-<<backup>>
+<<imports_for_migration>>
+<<config>>
 <<config_string_analyzer>>
 <<migrate_usage>>
 <<migrate_feedback_records>>
 <<migrate_db>>
 <<main>>
+
+#+END_SRC
+#+BEGIN_SRC python :tangle backup.py :eval no :noweb yes
+
+<<imports_for_backup>>
+<<backup>>
 
 #+END_SRC

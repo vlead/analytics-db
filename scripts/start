@@ -1,5 +1,6 @@
 #!/bin/bash
 
+service apache2 stop
 service nginx start
 service elasticsearch start
 
