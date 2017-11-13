@@ -17,11 +17,11 @@
   |   | S. | Mi | Req | Milestone          | Plan | Status | Est | Act | Issues |
   |   | no | no | Map |                    |      |        | hrs | hrs |        |
   |---+----+----+-----+--------------------+------+--------+-----+-----+--------|
-  |   |  1 | [[https://github.com/vlead/analytics-db/milestone/2][2]]  |     | [[https://github.com/vlead/analytics-db/milestone/2][Service deployment]] |      | Closed | 104 | 132 | [[https://github.com/vlead/analytics-db/milestones/ADS%2520deployment%2520and%2520implementation%2520of%2520backup%2520restore%2520script][ref]]    |
+  |   |  1 | [[https://github.com/vlead/analytics-db/milestone/2][2]]  |     | [[https://github.com/vlead/analytics-db/milestone/2][Service deployment]] |      | Closed | 116 | 146 | [[https://github.com/vlead/analytics-db/milestones/ADS%2520deployment%2520and%2520implementation%2520of%2520backup%2520restore%2520script][ref]]    |
   |---+----+----+-----+--------------------+------+--------+-----+-----+--------|
   |   |  2 | [[https://github.com/vlead/lab-data-service/milestone/1][1]]  |     | [[https://github.com/vlead/analytics-db/milestone/1][Define data-model]]  |      | Closed | 146 | 167 | [[https://github.com/vlead/analytics-db/milestones/define%2520database%2520model%2520and%2520caputre%2520the%2520design][ref]]    |
   |---+----+----+-----+--------------------+------+--------+-----+-----+--------|
-  |   |    |    |     | Total              |      |        | 250 | 299 |        |
+  |   |    |    |     | Total              |      |        | 262 | 313 |        |
   | ^ |    |    |     |                    |      |        |  et |  at |        |
   |---+----+----+-----+--------------------+------+--------+-----+-----+--------|
   #+TBLFM: $2=@#-2
@@ -43,33 +43,37 @@
  #+caption:  realization-plan
  #+name: tbl-rlz-pln-ml-2
  |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
- |    S. | Tasks                       | Github | Est    | Act    | Est    | Act    | Status | Assignee |
+ |    S. | Tasks                       | Github |    Est |    Act | Est    | Act    | Status | Assignee |
  |    NO |                             | Issues | Effort | Effort | Start, | Start/ |        |          |
- |       |                             |        | (in    | (in    | End    | End    |        |          |
+ |       |                             |        |    (in |    (in | End    | End    |        |          |
  |       |                             |        | person | person | Dates  | Dates  |        |          |
  |       |                             |        | hours) | hours) |        |        |        |          |
  |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
- |    1. | Backup and restore          | [[https://github.com/vlead/lab-data-service/issues/92][#92]]    | 24     | 32     |        |        | Done   | Sripathi |
+ |    1. | Backup and restore          | [[https://github.com/vlead/lab-data-service/issues/92][#92]]    |     24 |     32 |        |        | Done   | Sripathi |
  |       | scripts to be written       |        |        |        |        |        |        |          |
  |       | for elastic search          |        |        |        |        |        |        |          |
  |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
- |    2. | migrate elasticsearch       | [[https://github.com/vlead/analytics-db/issues/21][#21]]    | 16     | 24     |        |        | Done   | Sripathi |
+ |    2. | migrate elasticsearch       | [[https://github.com/vlead/analytics-db/issues/21][#21]]    |     16 |     24 |        |        | Done   | Sripathi |
  |       | database with no production |        |        |        |        |        |        |          |
  |       | downtime                    |        |        |        |        |        |        |          |
  |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
- |    3. | Making elasticsearch        | [[https://github.com/vlead/analytics-db/issues/8][#8]]     | 32     | 36     |        |        | Done   | Sripathi |
+ |    3. | Making elasticsearch        | [[https://github.com/vlead/analytics-db/issues/8][#8]]     |     32 |     36 |        |        | Done   | Sripathi |
  |       | service ADS deployable      |        |        |        |        |        |        |          |
  |       |                             |        |        |        |        |        |        |          |
  |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
- |    4. | Things to be done for       | [[https://github.com/vlead/analytics-db/issues/19][#19]]    | 32     | 40     |        |        | Done   | Sripathi |
+ |    4. | Things to be done for       | [[https://github.com/vlead/analytics-db/issues/19][#19]]    |     32 |     40 |        |        | Done   | Sripathi |
  |       | release v0.0.1              |        |        |        |        |        |        |          |
  |       |                             |        |        |        |        |        |        |          |
  |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
- | Total |                             |        | 104    | 132    |        |        |        |          |
- |     ^ |                             |        | est    | act    |        |        |        |          |
+ |    5. | Deploy analytics            | [[https://github.com/vlead/analytics-db/issues/22][#22]]    |     12 |     14 |        |        | Done   | Sripathi |
+ |       | database on stagging        |        |        |        |        |        |        |          |
+ |       | server                      |        |        |        |        |        |        |          |
  |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
- #+TBLFM: $estimated=vsum(@II+1..@-1)
- #+TBLFM: $actual=vsum(@II+1..@-1)
+ | Total |                             |        |    116 |    146 |        |        |        |          |
+ |     ^ |                             |        |    est |    act |        |        |        |          |
+ |-------+-----------------------------+--------+--------+--------+--------+--------+--------+----------|
+ #+TBLFM: $est=vsum(@II+1..@-1)
+ #+TBLFM: $act=vsum(@II+1..@-1)
 
 ** Define database model
 
