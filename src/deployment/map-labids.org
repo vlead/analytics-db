@@ -9,7 +9,8 @@
 * Introduction
   This has the script to find and replace old lab_ids with
   new lab_ids
-* Modified lab ids mapping
+* Modified lab id's map
+  Following are the lab ids mapping from old to new
   #+NAME: labid-map-json
   #+BEGIN_SRC json
  [
@@ -516,31 +517,78 @@
  ]
   
   #+END_SRC
-* Read the lines and replace them
-  #+NAME: find-replace
+* Get analytics records
+  Get the analytics records for a given lab_id
+  #+NAME: get-analytics-record
   #+BEGIN_SRC python
-def replace_str_in_file(file_name):
 
-    with open(file_name, 'r') as file :
-        filedata = file.read()
-    lab-id-map-file = "map-lab-ids.json"
-    with open(lab-id-map-file) as json_data:
-        labs = json.load(json_data)
-    for lab in labs:
-        STR_TO_BE_SEARCHED = lab['old_lab_id']
-        STR_TO_BE_REPLACED = lab['new_lab_id']
-        filedata = filedata.replace(STR_TO_BE_SEARCHED, \
-                                    STR_TO_BE_REPLACED)
-    return filedata
-                                
+def update_analytics_records(lab_id):
+
+    analytics_url = "%s/vlabs/usage/_search?q=LAB_ID:%s&size=10000" % (analytics_host, lab_id)
+    try:
+        r = requests.get(analytics_url)
+        if r.status_code == 200:
+            analytics_records = r.json()['hits']['hits']
+
+            for record in analytics_records:
+                put_analytics_record(record)
+
+            return True
+        else:
+            return False
+    except Exception as e:
+        print str(e)
+        return False
+
   #+END_SRC
- - Reference :: Convert csv to json [[http://www.csvjson.com/csv2json][referece]]
-* Write into file
-  #+NAME: write-to-file
+* Put analytics record
+  #+NAME: put-analytics-record
   #+BEGIN_SRC python
-def write_to_file(file_name, file_data):
-    with open(file_name, 'w') as file:
-        file.write(file_data)
+
+def put_analytics_record(record):
+    old_lab_id = str(record['_source']['LAB_ID'])
+    record_id = str(record['_id'])
+    new_lab_id = get_new_lab_id(old_lab_id)
+    analytics_url = "%s/vlabs/usage/%s" % (analytics_host, record_id)
+    record['LAB_ID'] = new_lab_id
+    headers = {'Content-Type': 'application/json'}
+    r = requests.put(analytics_url, data=json.dumps(record['_source']), headers=headers)
+
+    if r.status_code == 201 or r.status_code == 200:
+        print "updated"
+    else:
+        print "error in update"
+
+  #+END_SRC
+* Get new lab id
+  #+NAME: get-new-labid
+  #+BEGIN_SRC python
+
+def get_new_lab_id(lab_id):
+    try:
+        with open("lab-ids-mapping.json") as json_data:
+            labs = json.load(json_data)
+        for lab in labs:
+            if lab_id.lower() == str(lab['old_lab_id']).lower():
+                return lab['new_lab_id']
+    except Exception as e:
+        print str(e)
+
+  #+END_SRC
+* Map lab ids
+  #+NAME: map-lab-ids
+  #+BEGIN_SRC python
+
+def map_lab_ids():
+    try:
+        with open("lab-ids-mapping.json") as json_data:
+            labs = json.load(json_data)
+        for lab in labs:
+            lab_id = str(lab['old_lab_id']).upper()
+            update_analytics_records(lab_id)
+    except Exception as e:
+        print str(e)
+
   #+END_SRC
 
 * Main function
@@ -548,33 +596,28 @@ def write_to_file(file_name, file_data):
 #+NAME: main
 #+BEGIN_SRC python
 if __name__== "__main__":
-    import sys
-    import os
-
-    if len(sys.argv) != 2:
-        print "Invalid number of arguments"
-        exit(1)
-    backup_file = sys.argv[1]
-    file_data = replace_str_in_file(backup_file)
-    write_to_file(backup_file, file_data):
+    map_lab_ids()
 #+END_SRC
   
 * Tangle                                                        :boilerplate:
-*** Imports 
+** Imports 
 #+NAME: imports_for_map_lab_ids
 #+BEGIN_SRC python
 
 import json
+import requests
 
 #+END_SRC
-*** Sources
+** Sources
 #+BEGIN_SRC python :tangle map-labids.py :eval no :noweb yes
 <<imports_for_map_lab_ids>>
-<<lab-id-map>>
-<<find-replace>>
-<<write-to-file>>
+analytics_host = "http://192.168.33.4:9200"
+<<get-new-labid>>
+<<put-analytics-record>>
+<<get-analytics-record>>
+<<map-lab-ids>>
 <<main>>
 #+END_SRC
-#+BEGIN_SRC json :tangle map-lab-ids.json :eval no :noweb yes
+#+BEGIN_SRC json :tangle lab-ids-mapping.json :eval no :noweb yes
 <<labid-map-json>>
 #+END_SRC
