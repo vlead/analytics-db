@@ -529,16 +529,13 @@ def update_analytics_records(lab_id):
         r = requests.get(analytics_url)
         if r.status_code == 200:
             analytics_records = r.json()['hits']['hits']
-
             for record in analytics_records:
-                put_analytics_record(record)
-
-            return True
+                if str(record['_source']['LAB_ID']) == lab_id:
+                    put_analytics_record(record)
         else:
-            return False
+            print "Error occured"
     except Exception as e:
         print str(e)
-        return False
 
   #+END_SRC
 * Put analytics record
@@ -546,18 +543,19 @@ def update_analytics_records(lab_id):
   #+BEGIN_SRC python
 
 def put_analytics_record(record):
-    old_lab_id = str(record['_source']['LAB_ID'])
+
+    old_lab_id = str(record['_source']['LAB_ID']).lower()
     record_id = str(record['_id'])
     new_lab_id = get_new_lab_id(old_lab_id)
     analytics_url = "%s/vlabs/usage/%s" % (analytics_host, record_id)
-    record['LAB_ID'] = new_lab_id
+    record['_source']['LAB_ID'] = new_lab_id
     headers = {'Content-Type': 'application/json'}
     r = requests.put(analytics_url, data=json.dumps(record['_source']), headers=headers)
 
     if r.status_code == 201 or r.status_code == 200:
-        print "updated"
+        print "updated lab_id from %s ---> %s" % (old_lab_id, new_lab_id)
     else:
-        print "error in update"
+        print "error in updating lab_id from %s ---> %s" % (old_lab_id, new_lab_id)
 
   #+END_SRC
 * Get new lab id
