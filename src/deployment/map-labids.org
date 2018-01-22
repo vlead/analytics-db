@@ -1,4 +1,4 @@
-#+TITLE: Run Analytics Database Service on Development environment
+#+TITLE: Script for Mapping Lab IDs
 #+AUTHOR: VLEAD
 #+DATE: [2017-08-10 Sun]
 #+SETUPFILE: ../org-templates/level-1.org
@@ -8,11 +8,43 @@
 
 * Introduction
   This has the script to find and replace old lab_ids with
-  new lab_ids
-* Modified lab id's map
-  Following are the lab ids mapping from old to new
-  #+NAME: labid-map-json
-  #+BEGIN_SRC json
+  new lab_ids in the vlabs analytics database records
+* How to run script
+  1) Clone the repository
+     #+BEGIN_EXAMPLE
+     git clone https://github.com/vlead/analytics-db
+     #+END_EXAMPLE
+  2) Change directory to =analytics-db= and checkout branch
+     to =develop=
+     #+BEGIN_EXAMPLE
+     cd analytics-db
+     git checkout develop
+     #+END_EXAMPLE
+  3) Build the sources
+     #+BEGIN_EXAMPLE
+     make
+     #+END_EXAMPLE
+  4) Change directory to =deployment=
+     #+BEGIN_EXAMPLE
+     cd build/code/deployment
+     #+END_EXAMPLE
+  5) Configure the =analytics_host= url in =map-labids.py=
+     #+BEGIN_EXAMPLE
+     ----
+     ----
+     analytics_host = "http://192.168.33.4:9200"
+     ----
+     ----
+     #+END_EXAMPLE
+  6) Run the script
+     #+BEGIN_EXAMPLE
+     python map-labids.py
+     #+END_EXAMPLE
+* Script implementation
+** Modified lab id's map
+   Following are the lab ids mapping from old to new
+   #+NAME: labid-map-json
+   #+BEGIN_SRC json
  [
   {
     "new_lab_id": "biotech27",
@@ -516,13 +548,13 @@
   }
  ]
   
-  #+END_SRC
-* Get analytics records
-  Get the analytics records for a given lab_id
-  #+NAME: get-analytics-record
-  #+BEGIN_SRC python
+   #+END_SRC
+** Get analytics records
+   Get the analytics records for a given lab_id
+   #+NAME: get-analytics-record
+   #+BEGIN_SRC python
 
-def update_analytics_records(lab_id):
+def get_analytics_records(lab_id):
 
     analytics_url = "%s/vlabs/usage/_search?q=LAB_ID:%s&size=10000" % (analytics_host, lab_id)
     try:
@@ -531,18 +563,19 @@ def update_analytics_records(lab_id):
             analytics_records = r.json()['hits']['hits']
             for record in analytics_records:
                 if str(record['_source']['LAB_ID']) == lab_id:
-                    put_analytics_record(record)
+                    update_analytics_record(record)
         else:
             print "Error occured"
     except Exception as e:
         print str(e)
 
-  #+END_SRC
-* Put analytics record
-  #+NAME: put-analytics-record
-  #+BEGIN_SRC python
+   #+END_SRC
+** Update analytics record
+   This function updates analytics records
+   #+NAME: put-analytics-record
+   #+BEGIN_SRC python
 
-def put_analytics_record(record):
+def update_analytics_record(record):
 
     old_lab_id = str(record['_source']['LAB_ID']).lower()
     record_id = str(record['_id'])
@@ -557,10 +590,12 @@ def put_analytics_record(record):
     else:
         print "error in updating lab_id from %s ---> %s" % (old_lab_id, new_lab_id)
 
-  #+END_SRC
-* Get new lab id
-  #+NAME: get-new-labid
-  #+BEGIN_SRC python
+   #+END_SRC
+** Get new lab id
+   This function maps the old lab_id and returns the new
+   lab_id
+   #+NAME: get-new-labid
+   #+BEGIN_SRC python
 
 def get_new_lab_id(lab_id):
     try:
@@ -572,10 +607,10 @@ def get_new_lab_id(lab_id):
     except Exception as e:
         print str(e)
 
-  #+END_SRC
-* Map lab ids
-  #+NAME: map-lab-ids
-  #+BEGIN_SRC python
+   #+END_SRC
+** Map lab ids
+   #+NAME: map-lab-ids
+   #+BEGIN_SRC python
 
 def map_lab_ids():
     try:
@@ -583,19 +618,19 @@ def map_lab_ids():
             labs = json.load(json_data)
         for lab in labs:
             lab_id = str(lab['old_lab_id']).upper()
-            update_analytics_records(lab_id)
+            get_analytics_records(lab_id)
     except Exception as e:
         print str(e)
 
-  #+END_SRC
+   #+END_SRC
 
-* Main function
-   This function invokes =migrate()= function.
-#+NAME: main
-#+BEGIN_SRC python
+** Main function
+    This function invokes =migrate()= function.
+ #+NAME: main
+ #+BEGIN_SRC python
 if __name__== "__main__":
     map_lab_ids()
-#+END_SRC
+ #+END_SRC
   
 * Tangle                                                        :boilerplate:
 ** Imports 
