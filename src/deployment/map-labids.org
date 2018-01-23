@@ -7,8 +7,8 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This has the script to find and replace old lab_ids with
-  new lab_ids in the vlabs analytics database records
+  This has the script to find and replace all the database
+  analytics records from old lab_ids with new lab_ids
 * How to run script
   1) Clone the repository
      #+BEGIN_EXAMPLE
@@ -556,13 +556,16 @@
 
 def get_analytics_records(lab_id):
 
-    analytics_url = "%s/vlabs/usage/_search?q=LAB_ID:%s&size=10000" % (analytics_host, lab_id)
+    analytics_url = \
+      "%s/vlabs/usage/_search?q=LAB_ID:%s&size=10000" % \
+      (analytics_host, lab_id)
     try:
         r = requests.get(analytics_url)
         if r.status_code == 200:
             analytics_records = r.json()['hits']['hits']
             for record in analytics_records:
-                if str(record['_source']['LAB_ID']) == lab_id:
+                if str(record['_source']['LAB_ID']) == \
+                  lab_id:
                     update_analytics_record(record)
         else:
             print "Error occured"
@@ -580,15 +583,20 @@ def update_analytics_record(record):
     old_lab_id = str(record['_source']['LAB_ID']).lower()
     record_id = str(record['_id'])
     new_lab_id = get_new_lab_id(old_lab_id)
-    analytics_url = "%s/vlabs/usage/%s" % (analytics_host, record_id)
+    analytics_url = "%s/vlabs/usage/%s" % \
+      (analytics_host, record_id)
     record['_source']['LAB_ID'] = new_lab_id
     headers = {'Content-Type': 'application/json'}
-    r = requests.put(analytics_url, data=json.dumps(record['_source']), headers=headers)
+    r = requests.put(analytics_url, \
+                     data=json.dumps(record['_source']), \
+                         headers=headers)
 
     if r.status_code == 201 or r.status_code == 200:
-        print "updated lab_id from %s ---> %s" % (old_lab_id, new_lab_id)
+        print "updated lab_id from %s ---> %s" % \
+          (old_lab_id, new_lab_id)
     else:
-        print "error in updating lab_id from %s ---> %s" % (old_lab_id, new_lab_id)
+        print "error in updating lab_id from %s ---> %s" % \
+          (old_lab_id, new_lab_id)
 
    #+END_SRC
 ** Get new lab id
@@ -602,7 +610,8 @@ def get_new_lab_id(lab_id):
         with open("lab-ids-mapping.json") as json_data:
             labs = json.load(json_data)
         for lab in labs:
-            if lab_id.lower() == str(lab['old_lab_id']).lower():
+            if lab_id.lower() == \
+              str(lab['old_lab_id']).lower():
                 return lab['new_lab_id']
     except Exception as e:
         print str(e)
