@@ -1,4 +1,4 @@
-#+TITLE: Script for Mapping Lab IDs
+#+TITLE: Script for Updating Lab IDs in Analytics Database Records 
 #+AUTHOR: VLEAD
 #+DATE: [2017-08-10 Sun]
 #+SETUPFILE: ../org-templates/level-1.org
@@ -7,9 +7,9 @@
 #+OPTIONS: ^:nil
 
 * Introduction
-  This has the script to find and replace all the database
-  analytics records from old lab_ids with new lab_ids
-* How to run script
+  This has the script to find and updates all the database
+  analytics records from old lab_ids to new lab_ids
+* How to run script???
   1) Clone the repository
      #+BEGIN_EXAMPLE
      git clone https://github.com/vlead/analytics-db
@@ -41,8 +41,9 @@
      python map-labids.py
      #+END_EXAMPLE
 * Script implementation
-** Modified lab id's map
-   Following are the lab ids mapping from old to new
+** List of lab_id mapping from old to new
+   A JSON record contains all the lab ids mapping from old
+   to new
    #+NAME: labid-map-json
    #+BEGIN_SRC json
  [
@@ -550,31 +551,33 @@
   
    #+END_SRC
 ** Get analytics records
-   Get the analytics records for a given lab_id
+   Get the total analytics records for a given lab_id and
+   update them with new lab_id
    #+NAME: get-analytics-record
    #+BEGIN_SRC python
 
-def get_analytics_records(lab_id):
+def get_analytics_records(old_lab_id):
 
     analytics_url = \
       "%s/vlabs/usage/_search?q=LAB_ID:%s&size=10000" % \
-      (analytics_host, lab_id)
+      (analytics_host, old_lab_id)
     try:
         r = requests.get(analytics_url)
         if r.status_code == 200:
             analytics_records = r.json()['hits']['hits']
             for record in analytics_records:
                 if str(record['_source']['LAB_ID']) == \
-                  lab_id:
+                  old_lab_id:
                     update_analytics_record(record)
         else:
-            print "Error occured"
+            print "Error in getting records for LAB_ID :%s"\
+              % (old_lab_id)
     except Exception as e:
         print str(e)
 
    #+END_SRC
 ** Update analytics record
-   This function updates analytics records
+   This function updates analytics records with new lab_id
    #+NAME: put-analytics-record
    #+BEGIN_SRC python
 
@@ -618,6 +621,7 @@ def get_new_lab_id(lab_id):
 
    #+END_SRC
 ** Map lab ids
+   
    #+NAME: map-lab-ids
    #+BEGIN_SRC python
 
@@ -634,7 +638,7 @@ def map_lab_ids():
    #+END_SRC
 
 ** Main function
-    This function invokes =migrate()= function.
+    This function invokes =map_lab_ids()= function.
  #+NAME: main
  #+BEGIN_SRC python
 if __name__== "__main__":
