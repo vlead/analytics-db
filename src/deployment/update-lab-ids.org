@@ -550,6 +550,25 @@
  ]
   
    #+END_SRC
+** Get new lab id
+   This function maps the old lab_id and returns the new
+   lab_id
+   #+NAME: get-new-labid
+   #+BEGIN_SRC python
+
+def get_new_lab_id(lab_id):
+    lab_id = lab_id.lower()
+    try:
+        with open("lab-ids-mapping.json") as json_data:
+            records = json.load(json_data)
+        record = next(record for record in records \
+                      if record["old_lab_id"].lower() == \
+                          lab_id)
+        return record['new_lab_id']
+    except Exception as e:
+        print str(e)
+
+   #+END_SRC
 ** Get analytics records
    Get the total analytics records for a given lab_id and
    update them with new lab_id
@@ -600,24 +619,6 @@ def update_analytics_record(record):
     else:
         print "error in updating lab_id from %s ---> %s" % \
           (old_lab_id, new_lab_id)
-
-   #+END_SRC
-** Get new lab id
-   This function maps the old lab_id and returns the new
-   lab_id
-   #+NAME: get-new-labid
-   #+BEGIN_SRC python
-
-def get_new_lab_id(lab_id):
-    try:
-        with open("lab-ids-mapping.json") as json_data:
-            labs = json.load(json_data)
-        for lab in labs:
-            if lab_id.lower() == \
-              str(lab['old_lab_id']).lower():
-                return lab['new_lab_id']
-    except Exception as e:
-        print str(e)
 
    #+END_SRC
 ** Map lab ids
