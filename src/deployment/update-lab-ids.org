@@ -38,7 +38,7 @@
      #+END_EXAMPLE
   6) Run the script
      #+BEGIN_EXAMPLE
-     python map-labids.py
+     python update-lab-ids.py
      #+END_EXAMPLE
 * Script implementation
 ** List of lab_id mapping from old to new
@@ -655,7 +655,7 @@ import requests
 
 #+END_SRC
 ** Sources
-#+BEGIN_SRC python :tangle map-labids.py :eval no :noweb yes
+#+BEGIN_SRC python :tangle update-lab-ids.py :eval no :noweb yes
 <<imports_for_map_lab_ids>>
 analytics_host = "http://192.168.33.4:9200"
 <<get-new-labid>>
