@@ -263,12 +263,12 @@ if __name__== "__main__":
  #+NAME: config
  #+BEGIN_SRC python
 
- ELASTIC_DB_URL = "http://localhost"
- USER="username"
- PASSWORD="password"
- LDS_URL = "http://lds.vlabs.ac.in"
+ELASTIC_DB_URL = "http://localhost"
+USER="username"
+PASSWORD="password"
+LDS_URL = "http://lds.vlabs.ac.in"
 
- auth = (USER, PASSWORD)
+auth = (USER, PASSWORD)
 
    #+END_SRC
 
