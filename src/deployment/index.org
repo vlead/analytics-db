@@ -16,7 +16,7 @@
 * Steps to run =analytics-db= database service behind =nginx=
 
 1. [[https://github.com/vlead/vlead-templates/blob/develop/vagrant-boxes/create-vagrant-box.org#steps-to-create-vm-using-vagrant][Create Machine]] using vagrant
-
+   
 2. Update machine
    #+BEGIN_EXAMPLE
    sudo apt-get update -y
@@ -263,12 +263,12 @@ if __name__== "__main__":
  #+NAME: config
  #+BEGIN_SRC python
 
-ELASTIC_DB_URL = "http://localhost"
-USER="username"
-PASSWORD="password"
-LDS_URL = "http://lds.vlabs.ac.in"
+ ELASTIC_DB_URL = "http://localhost"
+ USER="username"
+ PASSWORD="password"
+ LDS_URL = "http://lds.vlabs.ac.in"
 
-auth = (USER, PASSWORD)
+ auth = (USER, PASSWORD)
 
    #+END_SRC
 
