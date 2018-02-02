@@ -1,0 +1,670 @@
+#+TITLE: Script for Updating Lab IDs in Analytics Database Records 
+#+AUTHOR: VLEAD
+#+DATE: [2017-08-10 Sun]
+#+SETUPFILE: ../org-templates/level-1.org
+#+TAGS: boilerplate(b)
+#+EXCLUDE_TAGS: boilerplate
+#+OPTIONS: ^:nil
+
+* Introduction
+  This has the script to find and updates all the database
+  analytics records from old lab_ids to new lab_ids
+* How to run script???
+  1) Clone the repository
+     #+BEGIN_EXAMPLE
+     git clone https://github.com/vlead/analytics-db
+     #+END_EXAMPLE
+  2) Change directory to =analytics-db= and checkout branch
+     to =develop=
+     #+BEGIN_EXAMPLE
+     cd analytics-db
+     git checkout develop
+     #+END_EXAMPLE
+  3) Build the sources
+     #+BEGIN_EXAMPLE
+     make
+     #+END_EXAMPLE
+  4) Change directory to =deployment=
+     #+BEGIN_EXAMPLE
+     cd build/code/deployment
+     #+END_EXAMPLE
+  5) Configure the =analytics_host= url in =map-labids.py=
+     #+BEGIN_EXAMPLE
+     ----
+     ----
+     analytics_host = "http://192.168.33.4:9200"
+     ----
+     ----
+     #+END_EXAMPLE
+  6) Run the script
+     #+BEGIN_EXAMPLE
+     python update-lab-ids.py
+     #+END_EXAMPLE
+* Script implementation
+** List of lab_id mapping from old to new
+   A JSON record contains all the lab ids mapping from old
+   to new
+   #+NAME: labid-map-json
+   #+BEGIN_SRC json
+ [
+  {
+    "new_lab_id": "biotech27",
+    "lab name": "Bio-reactor Modeling and Simulation Lab",
+    "old_lab_id": "bio15"
+  },
+  {
+    "new_lab_id": "biotech28",
+    "lab name": "Biomedical and Signal Processing Laboratory",
+    "old_lab_id": "bio16"
+  },
+  {
+    "new_lab_id": "biotech29",
+    "lab name": "Cell biology Virtual Lab II",
+    "old_lab_id": "cbii-au"
+  },
+  {
+    "new_lab_id": "biotech30",
+    "lab name": "Molecular biology Virtual Lab II",
+    "old_lab_id": "mbvii-au"
+  },
+  {
+    "new_lab_id": "biotech31",
+    "lab name": "Plant Metabolic Pathways Virtual Laboratory",
+    "old_lab_id": "rtv05"
+  },
+  {
+    "new_lab_id": "biotech32",
+    "lab name": "Medical Signal and Image Processing",
+    "old_lab_id": "eee23"
+  },
+  {
+    "new_lab_id": "chemengg01",
+    "lab name": "",
+    "old_lab_id": "chem-engg04"
+  },
+  {
+    "new_lab_id": "chemengg02",
+    "lab name": "Analytical and Virtual Instrumentation and Applications Lab",
+    "old_lab_id": "ai-dei"
+  },
+  {
+    "new_lab_id": "chemengg03",
+    "lab name": "Mass Transfer",
+    "old_lab_id": "ce01"
+  },
+  {
+    "new_lab_id": "chemengg04",
+    "lab name": "Chemical Engineering",
+    "old_lab_id": "chem01"
+  },
+  {
+    "new_lab_id": "chemengg05",
+    "lab name": "Unit Operations, Reaction Engineering and Process Control",
+    "old_lab_id": "chem05"
+  },
+  {
+    "new_lab_id": "chemengg06",
+    "lab name": "Virtual Chemistry Lab",
+    "old_lab_id": "chs12"
+  },
+  {
+    "new_lab_id": "chemengg07",
+    "lab name": "Chemical Process Dynamics Laboratory",
+    "old_lab_id": "vls14"
+  },
+  {
+    "new_lab_id": "chemsc01",
+    "lab name": "Advanced Analytical Chemistry Virtual Lab",
+    "old_lab_id": "aacv-au"
+  },
+  {
+    "new_lab_id": "chemsc02",
+    "lab name": "Molecular Fluorescence Spectroscopy",
+    "old_lab_id": "ccnsb01"
+  },
+  {
+    "new_lab_id": "chemsc03",
+    "lab name": "Colloid and Surface Chemistry",
+    "old_lab_id": "ccnsb02"
+  },
+  {
+    "new_lab_id": "chemsc04",
+    "lab name": "Molecular Absorption Spectroscopy",
+    "old_lab_id": "ccnsb03"
+  },
+  {
+    "new_lab_id": "chemsc05",
+    "lab name": "Quantum Chemistry",
+    "old_lab_id": "ccnsb04"
+  },
+  {
+    "new_lab_id": "chemsc06",
+    "lab name": "Circular Dichroism Spectroscopy",
+    "old_lab_id": "ccnsb05"
+  },
+  {
+    "new_lab_id": "chemsc07",
+    "lab name": "Physical Chemistry",
+    "old_lab_id": "ccnsb06"
+  },
+  {
+    "new_lab_id": "chemsc08",
+    "lab name": "Molecular Interaction",
+    "old_lab_id": "ccnsb07"
+  },
+  {
+    "new_lab_id": "chemsc09",
+    "lab name": "Ultrafast Laser Spectroscopy",
+    "old_lab_id": "chs13"
+  },
+  {
+    "new_lab_id": "chemsc10",
+    "lab name": "Organic Chemistry Virtual Lab",
+    "old_lab_id": "ocv-au"
+  },
+  {
+    "new_lab_id": "chemsc11",
+    "lab name": "Physical Chemistry Virtual Lab",
+    "old_lab_id": "pcv-au"
+  },
+  {
+    "new_lab_id": "chemsc12",
+    "lab name": "Inorganic Chemistry Virtual Lab",
+    "old_lab_id": "icv-au"
+  },
+  {
+    "new_lab_id": "civil21",
+    "lab name": "Basic Engineering Mechanics and Strength of Materials",
+    "old_lab_id": "eerc01"
+  },
+  {
+    "new_lab_id": "civil22",
+    "lab name": "Soil Mechanics Lab",
+    "old_lab_id": "eerc02"
+  },
+  {
+    "new_lab_id": "civil23",
+    "lab name": "Hydraulics and Fluid Mechanics",
+    "old_lab_id": "eerc03"
+  },
+  {
+    "new_lab_id": "civil24",
+    "lab name": "Basic Structural Analysis",
+    "old_lab_id": "eerc04"
+  },
+  {
+    "new_lab_id": "civil25",
+    "lab name": "Geotechnical Engineering",
+    "old_lab_id": "eerc05"
+  },
+  {
+    "new_lab_id": "civil26",
+    "lab name": "Structural Dynamics",
+    "old_lab_id": "eerc06"
+  },
+  {
+    "new_lab_id": "civil27",
+    "lab name": "Fluid Machinery Lab",
+    "old_lab_id": "fmc-nitk"
+  },
+  {
+    "new_lab_id": "civil28",
+    "lab name": "Soft Computing Tools in Engineering",
+    "old_lab_id": "vls11"
+  },
+  {
+    "new_lab_id": "cse31",
+    "lab name": "Programming and Data Structure",
+    "old_lab_id": "vls08"
+  },
+  {
+    "new_lab_id": "cse32",
+    "lab name": "Software Engineering Lab",
+    "old_lab_id": "vls10"
+  },
+  {
+    "new_lab_id": "cse33",
+    "lab name": "Computer Organisation and Architecture",
+    "old_lab_id": "vls12"
+  },
+  {
+    "new_lab_id": "cse34",
+    "lab name": "Wireless Sensor Network Remote Triggered Lab",
+    "old_lab_id": "wsn-au"
+  },
+  {
+    "new_lab_id": "design01",
+    "lab name": "Creative Design, Prototyping and Experiential Simulation Lab",
+    "old_lab_id": "de01"
+  },
+  {
+    "new_lab_id": "design02",
+    "lab name": "Ergonomics Lab for Assessing Physical Aspects of Design",
+    "old_lab_id": "dsgn-engg04"
+  },
+  {
+    "new_lab_id": "ece41",
+    "lab name": "Digital VLSI Design Virtual Lab",
+    "old_lab_id": "eee05*"
+  },
+  {
+    "new_lab_id": "ece42",
+    "lab name": "Electromagnetic Theory",
+    "old_lab_id": "emt"
+  },
+  {
+    "new_lab_id": "ece43",
+    "lab name": "Modern Digital Design Lab",
+    "old_lab_id": "mddl"
+  },
+  {
+    "new_lab_id": "ece44",
+    "lab name": "Microelectronics and VLSI Engineering Laboratory",
+    "old_lab_id": "mvl01"
+  },
+  {
+    "new_lab_id": "ece45",
+    "lab name": "Basic Electronics Virtual Lab",
+    "old_lab_id": "mvl02"
+  },
+  {
+    "new_lab_id": "ece46",
+    "lab name": "Solid State Devices Laboratory",
+    "old_lab_id": "rtv04"
+  },
+  {
+    "new_lab_id": "ece47",
+    "lab name": "Technology CAD (TCAD) Laboratory",
+    "old_lab_id": "vls02"
+  },
+  {
+    "new_lab_id": "ece48",
+    "lab name": "Virtual Pulse, Switching and Analogue Circuits Lab",
+    "old_lab_id": "vls03"
+  },
+  {
+    "new_lab_id": "ece49",
+    "lab name": "Fading Channels and Mobile Communication",
+    "old_lab_id": "vls05"
+  },
+  {
+    "new_lab_id": "ece50",
+    "lab name": "Digital Signal Processing Lab",
+    "old_lab_id": "vls06"
+  },
+  {
+    "new_lab_id": "ece51",
+    "lab name": "Digital Electronic Circuits Laboratory",
+    "old_lab_id": "vls07"
+  },
+  {
+    "new_lab_id": "ece52",
+    "lab name": "Advanced Network Technologies Virtual Lab",
+    "old_lab_id": "vls09"
+  },
+  {
+    "new_lab_id": "ece53",
+    "lab name": "Real Time Embedded Systems Laboratory",
+    "old_lab_id": "vls13"
+  },
+  {
+    "new_lab_id": "ece54",
+    "lab name": "Virtual Electrical Machine",
+    "old_lab_id": "eee01"
+  },
+  {
+    "new_lab_id": "ece55",
+    "lab name": "Electronic Instrumentation Lab",
+    "old_lab_id": "eee02"
+  },
+  {
+    "new_lab_id": "ece56",
+    "lab name": "Speech Signal Processing Laboratory",
+    "old_lab_id": "eee03"
+  },
+  {
+    "new_lab_id": "ee01",
+    "lab name": "PLC",
+    "old_lab_id": "eee12"
+  },
+  {
+    "new_lab_id": "ee02",
+    "lab name": "Electrical Machines Lab",
+    "old_lab_id": "eee24"
+  },
+  {
+    "new_lab_id": "ee03",
+    "lab name": "Remote Triggered Electro Mechanical Conversion Laboratory",
+    "old_lab_id": "rte-iitg"
+  },
+  {
+    "new_lab_id": "ee04",
+    "lab name": "Analog Signals, Network and Measurement Laboratory",
+    "old_lab_id": "vls18"
+  },
+  {
+    "new_lab_id": "ee05",
+    "lab name": "Sensors Modeling and Simulation",
+    "old_lab_id": "eee05*"
+  },
+  {
+    "new_lab_id": "ee06",
+    "lab name": "Virtual Power Lab",
+    "old_lab_id": "eee06"
+  },
+  {
+    "new_lab_id": "ee07",
+    "lab name": "Virtual Power Electronics and Electric Drives Lab",
+    "old_lab_id": "eee07"
+  },
+  {
+    "new_lab_id": "ee08",
+    "lab name": "Industrial Electric Drives",
+    "old_lab_id": "eee08"
+  },
+  {
+    "new_lab_id": "ee09",
+    "lab name": "Industrial Automation Laboratory",
+    "old_lab_id": "eee09"
+  },
+  {
+    "new_lab_id": "ee10",
+    "lab name": "Electrical Machines",
+    "old_lab_id": "eee10"
+  },
+  {
+    "new_lab_id": "hmt01",
+    "lab name": "Virtual Interactive Lab",
+    "old_lab_id": "ee34"
+  },
+  {
+    "new_lab_id": "hmt02",
+    "lab name": "Virtual English and Communication Lab",
+    "old_lab_id": "hss02"
+  },
+  {
+    "new_lab_id": "hmt03",
+    "lab name": "Virtual Anthropology Lab",
+    "old_lab_id": "hss03"
+  },
+  {
+    "new_lab_id": "isengg01",
+    "lab name": "Virtual Laboratory for Simulation and Gaming",
+    "old_lab_id": "vls21"
+  },
+  {
+    "new_lab_id": "mech49",
+    "lab name": "Mechanical Vibration",
+    "old_lab_id": "me01"
+  },
+  {
+    "new_lab_id": "mech50",
+    "lab name": "Mechanical Laboratory Experience in Fluid and Thermal Sciences",
+    "old_lab_id": "me02"
+  },
+  {
+    "new_lab_id": "mech51",
+    "lab name": "Remote Triggered Vibration Lab",
+    "old_lab_id": "rt-nitk"
+  },
+  {
+    "new_lab_id": "mech52",
+    "lab name": "Computer Integrated Manufacturing System Laboratory",
+    "old_lab_id": "rtv01"
+  },
+  {
+    "new_lab_id": "mech53",
+    "lab name": "Remote Triggered Virtual Laboratory on Automotive Systems",
+    "old_lab_id": "rtv02"
+  },
+  {
+    "new_lab_id": "mech54",
+    "lab name": "Kinematics and Dynamics of Mechanisms",
+    "old_lab_id": "vls01"
+  },
+  {
+    "new_lab_id": "mech55",
+    "lab name": "Robotics and Control Systems Simulation Laboratory",
+    "old_lab_id": "vls04"
+  },
+  {
+    "new_lab_id": "mech56",
+    "lab name": "Rotating Machinery Fault Simulation Laboratory",
+    "old_lab_id": "vls15"
+  },
+  {
+    "new_lab_id": "mech57",
+    "lab name": "Mechanical Systems and Signal Processing Lab",
+    "old_lab_id": "vls16"
+  },
+  {
+    "new_lab_id": "mech58",
+    "lab name": "Model Based Fault Detection Lab",
+    "old_lab_id": "vls17"
+  },
+  {
+    "new_lab_id": "mech59",
+    "lab name": "Virtual Lab on Multiphase Flow",
+    "old_lab_id": "vls19"
+  },
+  {
+    "new_lab_id": "mech60",
+    "lab name": "Mechanisms and Robotics Lab",
+    "old_lab_id": "mvl03"
+  },
+  {
+    "new_lab_id": "mining01",
+    "lab name": "Virtual Labs on Mine Ventilation",
+    "old_lab_id": "vls20"
+  },
+  {
+    "new_lab_id": "mmengg01",
+    "lab name": "Thermal Processing and Microstructural Characterization",
+    "old_lab_id": "mat-sc01"
+  },
+  {
+    "new_lab_id": "mmengg02",
+    "lab name": "Structural Characterization of Materials Laboratory",
+    "old_lab_id": "rtv03"
+  },
+  {
+    "new_lab_id": "physc01",
+    "lab name": "Heat and Thermodynamics Virtual Lab",
+    "old_lab_id": "phy-sc10"
+  },
+  {
+    "new_lab_id": "physc02",
+    "lab name": "Electricity and Magnetism Virtual Lab",
+    "old_lab_id": "phy-sc13"
+  },
+  {
+    "new_lab_id": "physc03",
+    "lab name": "Solid State Physics Virtual Lab",
+    "old_lab_id": "phy-sc21"
+  },
+  {
+    "new_lab_id": "physc04",
+    "lab name": "Mechanics Virtual Lab (Pilot)",
+    "old_lab_id": "phy-sc22"
+  },
+  {
+    "new_lab_id": "physc05",
+    "lab name": "Advanced Mechanics Virtual Lab",
+    "old_lab_id": "phy-sc23"
+  },
+  {
+    "new_lab_id": "physc06",
+    "lab name": "Laser Optics Virtual Lab",
+    "old_lab_id": "phy-sc24"
+  },
+  {
+    "new_lab_id": "physc07",
+    "lab name": "Modern Physics Virtual Lab",
+    "old_lab_id": "phy-sc27"
+  },
+  {
+    "new_lab_id": "physc08",
+    "lab name": "Harmonic Motion and Waves Virtual Lab",
+    "old_lab_id": "phy-sc28"
+  },
+  {
+    "new_lab_id": "physc09",
+    "lab name": "Optical Device Characterizations",
+    "old_lab_id": "phy-sc30"
+  },
+  {
+    "new_lab_id": "physc10",
+    "lab name": "Low Temperature Electrical Transport and Property Measurements",
+    "old_lab_id": "phy-sc31"
+  },
+  {
+    "new_lab_id": "physc11",
+    "lab name": "Optics Virtual Lab",
+    "old_lab_id": "ov-au"
+  },
+  {
+    "new_lab_id": "physc12",
+    "lab name": "Virtual Electric Circuits Lab",
+    "old_lab_id": "ec-au"
+  },
+  {
+    "new_lab_id": "physc13",
+    "lab name": "Virtual Astrophysics Lab",
+    "old_lab_id": "phy01"
+  },
+  {
+    "new_lab_id": "physc14",
+    "lab name": "Virtual Microwave Lab",
+    "old_lab_id": "phy12"
+  },
+  {
+    "new_lab_id": "physc15",
+    "lab name": "Physical Sciences",
+    "old_lab_id": "phy14"
+  },
+  {
+    "new_lab_id": "physc16",
+    "lab name": "Oscillations",
+    "old_lab_id": "phy19"
+  }
+ ]
+  
+   #+END_SRC
+** Get new lab id
+   This function maps the old lab_id and returns the new
+   lab_id
+   #+NAME: get-new-labid
+   #+BEGIN_SRC python
+
+def get_new_lab_id(lab_id):
+    lab_id = lab_id.lower()
+    try:
+        with open("lab-ids-mapping.json") as json_data:
+            records = json.load(json_data)
+        record = next(record for record in records \
+                      if record["old_lab_id"].lower() == \
+                          lab_id)
+        return record['new_lab_id']
+    except Exception as e:
+        print str(e)
+
+   #+END_SRC
+** Get analytics records
+   Get the total analytics records for a given lab_id and
+   update them with new lab_id
+   #+NAME: get-analytics-record
+   #+BEGIN_SRC python
+
+def get_analytics_records(old_lab_id):
+
+    analytics_url = \
+      "%s/vlabs/usage/_search?q=LAB_ID:%s&size=10000" % \
+      (analytics_host, old_lab_id)
+    try:
+        r = requests.get(analytics_url)
+        if r.status_code == 200:
+            analytics_records = r.json()['hits']['hits']
+            for record in analytics_records:
+                if str(record['_source']['LAB_ID']) == \
+                  old_lab_id:
+                    update_analytics_record(record)
+        else:
+            print "Error in getting records for LAB_ID :%s"\
+              % (old_lab_id)
+    except Exception as e:
+        print str(e)
+
+   #+END_SRC
+** Update analytics record
+   This function updates analytics records with new lab_id
+   #+NAME: put-analytics-record
+   #+BEGIN_SRC python
+
+def update_analytics_record(record):
+
+    old_lab_id = str(record['_source']['LAB_ID']).lower()
+    record_id = str(record['_id'])
+    new_lab_id = get_new_lab_id(old_lab_id)
+    analytics_url = "%s/vlabs/usage/%s" % \
+      (analytics_host, record_id)
+    record['_source']['LAB_ID'] = new_lab_id
+    headers = {'Content-Type': 'application/json'}
+    r = requests.put(analytics_url, \
+                     data=json.dumps(record['_source']), \
+                         headers=headers)
+
+    if r.status_code == 201 or r.status_code == 200:
+        print "updated lab_id from %s ---> %s" % \
+          (old_lab_id, new_lab_id)
+    else:
+        print "error in updating lab_id from %s ---> %s" % \
+          (old_lab_id, new_lab_id)
+
+   #+END_SRC
+** Map lab ids
+   
+   #+NAME: map-lab-ids
+   #+BEGIN_SRC python
+
+def map_lab_ids():
+    try:
+        with open("lab-ids-mapping.json") as json_data:
+            labs = json.load(json_data)
+        for lab in labs:
+            lab_id = str(lab['old_lab_id']).upper()
+            get_analytics_records(lab_id)
+    except Exception as e:
+        print str(e)
+
+   #+END_SRC
+
+** Main function
+    This function invokes =map_lab_ids()= function.
+ #+NAME: main
+ #+BEGIN_SRC python
+if __name__== "__main__":
+    map_lab_ids()
+ #+END_SRC
+  
+* Tangle                                                        :boilerplate:
+** Imports 
+#+NAME: imports_for_map_lab_ids
+#+BEGIN_SRC python
+
+import json
+import requests
+
+#+END_SRC
+** Sources
+#+BEGIN_SRC python :tangle update-lab-ids.py :eval no :noweb yes
+<<imports_for_map_lab_ids>>
+analytics_host = "http://192.168.33.4:9200"
+<<get-new-labid>>
+<<put-analytics-record>>
+<<get-analytics-record>>
+<<map-lab-ids>>
+<<main>>
+#+END_SRC
+#+BEGIN_SRC json :tangle lab-ids-mapping.json :eval no :noweb yes
+<<labid-map-json>>
+#+END_SRC
